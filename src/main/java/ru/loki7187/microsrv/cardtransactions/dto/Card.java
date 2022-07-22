@@ -1,27 +1,29 @@
 package ru.loki7187.microsrv.cardtransactions.dto;
 
-public class Card {
-    private long num;
-    private long sum;
+import java.io.Serializable;
 
-    public Card(long num, long sum) {
+public class Card implements Serializable {
+    private Long num;
+    private Long sum;
+
+    public Card(Long num, Long sum) {
         this.num = num;
         this.sum = sum;
     }
 
-    public long getNum() {
+    public Long getNum() {
         return num;
     }
 
-    public void setNum(long num) {
+    public void setNum(Long num) {
         this.num = num;
     }
 
-    public long getSum() {
+    public Long getSum() {
         return sum;
     }
 
-    public void setSum(long sum) {
+    public void setSum(Long sum) {
         this.sum = sum;
     }
 
