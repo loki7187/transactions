@@ -2,7 +2,7 @@ create schema if not exists mainschema;
 
 create table if not exists mainschema.Card(
 
-    id number auto_increment not null primary key ,
+    id number not null primary key ,
     rest number
 );
 

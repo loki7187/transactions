@@ -9,7 +9,6 @@ import javax.persistence.*;
 public class CardEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id")
     Long cardNum;
 
@@ -38,5 +37,13 @@ public class CardEntity {
 
     public void setRest(Long rest) {
         this.rest = rest;
+    }
+
+    @Override
+    public String toString() {
+        return "CardEntity{" +
+                "cardNum=" + cardNum +
+                ", rest=" + rest +
+                '}';
     }
 }
