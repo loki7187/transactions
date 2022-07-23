@@ -23,12 +23,12 @@ public class CardRepoTest {
     }
 
     @Test
-    public void testSelectById (){
+    public void testSelectByIdPositive (){
         Assertions.assertEquals(100L, cardRepo.findById(1L).orElse(new CardEntity(0L, 0L)).getRest());
     }
 
     @Test
-    public void testSelectByIdNotFound (){
+    public void testSelectByIdNegative (){
         Assertions.assertFalse(cardRepo.findById(6L).isPresent());
     }
 }
