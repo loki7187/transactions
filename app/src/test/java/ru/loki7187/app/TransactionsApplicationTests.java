@@ -1,4 +1,4 @@
-package ru.loki7187.microsrv;
+package ru.loki7187.app;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

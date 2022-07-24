@@ -1,4 +1,4 @@
-package ru.loki7187.microsrv.globalconfig;
+package ru.loki7187.app.globalconfig;
 
 public class Constants {
 

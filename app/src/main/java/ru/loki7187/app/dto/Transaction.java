@@ -1,4 +1,4 @@
-package ru.loki7187.microsrv.cardtransactions.dto;
+package ru.loki7187.app.dto;
 
 import java.io.Serializable;
 

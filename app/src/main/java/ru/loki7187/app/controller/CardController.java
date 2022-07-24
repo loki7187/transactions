@@ -1,10 +1,10 @@
-package ru.loki7187.microsrv.cardtransactions.controller;
+package ru.loki7187.app.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.loki7187.microsrv.cardtransactions.dto.Card;
-import ru.loki7187.microsrv.cardtransactions.dto.Transaction;
-import ru.loki7187.microsrv.cardtransactions.service.CardService;
+import ru.loki7187.app.dto.Card;
+import ru.loki7187.app.dto.Transaction;
+import ru.loki7187.app.service.CardService;
 
 @RestController
 @RequestMapping("/cardTransactions")
@@ -29,10 +29,5 @@ public class CardController {
     public String makeTransaction(@RequestBody Transaction trn){
         var res = cardService.makeTransactionCardToCard(trn.getNum1(), trn.getSum(), trn.getNum2());
         return res.getLeft() + " " + res.getMiddle() + " " + res.getRight();
-    }
-
-    @GetMapping("/tmp")
-    public String tmpMethod() {
-        return "riegoirjg1122";
     }
 }

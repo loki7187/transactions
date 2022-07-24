@@ -1,10 +1,9 @@
-package ru.loki7187.microsrv;
+package ru.loki7187.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "ru.loki7187.*")
 public class TransactionsApplication {
 
 	public static void main(String[] args) {

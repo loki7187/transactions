@@ -1,14 +1,13 @@
-package ru.loki7187.microsrv.cardtransactions.service;
+package ru.loki7187.app.service;
 
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.loki7187.microsrv.cardtransactions.dao.CardRepo;
-import ru.loki7187.microsrv.cardtransactions.entity.CardEntity;
-
-import static ru.loki7187.microsrv.globalconfig.Constants.*;
+import ru.loki7187.app.dao.CardRepo;
+import ru.loki7187.app.entity.CardEntity;
+import ru.loki7187.app.globalconfig.Constants;
 
 @Service
 public class CardService {
@@ -39,7 +38,7 @@ public class CardService {
 
     @Transactional
     public Pair<String, CardEntity> decreaseCardRest(Long num, Long sum) {
-        var res = success;
+        var res = Constants.success;
         var ce = cardRepo.findById(num);
         CardEntity card = new CardEntity(0L, 0L);
         try {
@@ -49,20 +48,20 @@ public class CardService {
                     card.setRest(card.getRest() - sum);
                     cardRepo.save(card);
                 }else {
-                    res = notEnoughtMoney;
+                    res = Constants.notEnoughtMoney;
                 }
             } else {
-                res = cardNotFound;
+                res = Constants.cardNotFound;
             }
         } catch (Exception e) {
-            res = err;
+            res = Constants.err;
         }
         return Pair.of(res, card);
     }
 
     @Transactional
     public Triple<String, CardEntity, CardEntity> makeTransactionCardToCard (Long num1, Long sum, Long num2) {
-        var res = success;
+        var res = Constants.success;
         var ce1 = cardRepo.findById(num1);
         var ce2 = cardRepo.findById(num2);
         CardEntity card1 = new CardEntity(0L, 0L);
@@ -75,13 +74,13 @@ public class CardService {
                     card1.setRest(card1.getRest() - sum);
                     card2.setRest(card2.getRest() + sum);
                 } else {
-                    res = notEnoughtMoney;
+                    res = Constants.notEnoughtMoney;
                 }
             } else {
-                res = cardNotFound;
+                res = Constants.cardNotFound;
             }
         } catch (Exception e) {
-            res = err;
+            res = Constants.err;
         }
         return Triple.of(res, card1, card2);
     }

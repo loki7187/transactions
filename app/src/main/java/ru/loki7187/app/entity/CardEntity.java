@@ -1,4 +1,4 @@
-package ru.loki7187.microsrv.cardtransactions.entity;
+package ru.loki7187.app.entity;
 
 import org.springframework.stereotype.Component;
 
