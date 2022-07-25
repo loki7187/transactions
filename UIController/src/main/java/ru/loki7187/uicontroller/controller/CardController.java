@@ -1,4 +1,4 @@
-package ru.loki7187.app.controller;
+package ru.loki7187.uicontroller.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
