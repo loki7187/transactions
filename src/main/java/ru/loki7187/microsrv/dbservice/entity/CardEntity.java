@@ -1,12 +1,15 @@
-package ru.loki7187.microsrv.cardtransactions.entity;
+package ru.loki7187.microsrv.dbservice.entity;
 
-import org.springframework.stereotype.Component;
+import ru.loki7187.microsrv.globalDto.CardDto;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "Card", schema = "mainschema")
-public class CardEntity {
+public class CardEntity implements BaseCardEntity{
 
     @Id
     @Column(name = "id")
@@ -45,5 +48,10 @@ public class CardEntity {
                 "cardNum=" + cardNum +
                 ", rest=" + rest +
                 '}';
+    }
+
+    @Override
+    public CardDto getCardDtoView() {
+        return new CardDto(getCardNum(), getRest());
     }
 }

@@ -1,16 +1,16 @@
-package ru.loki7187.microsrv.cardtransactions.dto;
+package ru.loki7187.microsrv.globalDto;
 
 import java.io.Serializable;
 
-public class Transaction implements Serializable {
+public class TransactionDto implements Serializable {
     private Long num1;
     private Long num2;
     private Long sum;
 
-    public Transaction() {
+    public TransactionDto() {
     }
 
-    public Transaction(Long num1, Long num2, Long sum) {
+    public TransactionDto(Long num1, Long num2, Long sum) {
         this.num1 = num1;
         this.num2 = num2;
         this.sum = sum;

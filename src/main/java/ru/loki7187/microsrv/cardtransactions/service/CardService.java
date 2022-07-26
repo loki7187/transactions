@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.loki7187.microsrv.cardtransactions.dao.CardRepo;
-import ru.loki7187.microsrv.cardtransactions.entity.CardEntity;
+import ru.loki7187.microsrv.dbservice.dao.CardRepo;
+import ru.loki7187.microsrv.dbservice.entity.CardEntity;
 
 import static ru.loki7187.microsrv.globalconfig.Constants.*;
 

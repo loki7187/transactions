@@ -3,11 +3,10 @@ package ru.loki7187.microsrv;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
-import ru.loki7187.microsrv.cardtransactions.dao.CardRepo;
-import ru.loki7187.microsrv.cardtransactions.entity.CardEntity;
+import ru.loki7187.microsrv.dbservice.dao.CardRepo;
+import ru.loki7187.microsrv.dbservice.entity.CardEntity;
 
 @SpringBootTest
 @Sql(scripts = "/data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)

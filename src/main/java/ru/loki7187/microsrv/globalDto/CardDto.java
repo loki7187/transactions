@@ -1,12 +1,12 @@
-package ru.loki7187.microsrv.cardtransactions.dto;
+package ru.loki7187.microsrv.globalDto;
 
 import java.io.Serializable;
 
-public class Card implements Serializable {
+public class CardDto implements Serializable {
     private Long num;
     private Long sum;
 
-    public Card(Long num, Long sum) {
+    public CardDto(Long num, Long sum) {
         this.num = num;
         this.sum = sum;
     }
@@ -29,7 +29,7 @@ public class Card implements Serializable {
 
     @Override
     public String toString() {
-        return "Card{" +
+        return "CardDto{" +
                 "num=" + num +
                 ", sum=" + sum +
                 '}';
