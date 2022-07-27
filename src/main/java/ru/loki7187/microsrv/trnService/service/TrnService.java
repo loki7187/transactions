@@ -34,11 +34,12 @@ public class TrnService {
     @Autowired
     ApplicationContext ctx;
 
-    public Pair<Boolean, CardDto> increaseCardRest(Long num, Long sum) {
-        var trnId = getTrnId();
+    public Pair<Boolean, CardDto> increaseCardRest(CardDto card, Long id) {
         var trnData = ctx.getBean(TrnData.class);
-        trnData.setTrnId(trnId);
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId() == stepIncrease).findFirst().get(), new StepData()));
+        trnData.setTrnId(id);
+        var stepData = new StepData();
+        stepData.getStepParams().put("CardDto", card);
+        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId() == stepIncrease).findFirst().get(), stepData));
         var futureRes = runTrn(trnData);
         Pair<Boolean, CardDto> res = null;
         try {
@@ -53,6 +54,7 @@ public class TrnService {
         return res;
     }
 
+    //TODO доделать
     public Pair<String, CardEntity> decreaseCardRest(Long num, Long sum) {
         var trnId = getTrnId();
         var res = success;
@@ -60,6 +62,7 @@ public class TrnService {
         return Pair.of(res, card);
     }
 
+    //TODO доделать
     public Triple<String, CardEntity, CardEntity> makeTransactionCardToCard (Long num1, Long sum, Long num2) {
         var trnId = getTrnId();
         var res = success;
@@ -68,10 +71,12 @@ public class TrnService {
         return Triple.of(res, card1, card2);
     }
 
+    //TODO move fully to uiservice
     private Long getTrnId () {
         return new Date().getTime();
     }
 
+    //TODO see after long pollin controller
     @Async
     public Future<Pair<Boolean, CardDto>> runTrn (TrnData data){
         CardDto card = new CardDto(0L, 0L);
@@ -80,10 +85,12 @@ public class TrnService {
         return new AsyncResult<>(Pair.of(res, card));
     }
 
+    //TODO доделать
     public void onRunStep (TrnData data) {
         // тут отработать каждый шаг транзакции
     }
 
+    //TODO доделать
     public void onApplyStepResult() {
         // тут отработать ответ на выполнение шага
     }

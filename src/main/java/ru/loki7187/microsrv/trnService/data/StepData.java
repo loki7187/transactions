@@ -1,17 +1,22 @@
 package ru.loki7187.microsrv.trnService.data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class StepData {
 
-    ArrayList stepParams;
+    HashMap stepParams;
     Boolean stepStatus;
 
-    public ArrayList getStepParams() {
+    public StepData() {
+        this.stepParams = new HashMap();
+    }
+
+    public HashMap getStepParams() {
         return stepParams;
     }
 
-    public void setStepParams(ArrayList stepParams) {
+    public void setStepParams(HashMap stepParams) {
         this.stepParams = stepParams;
     }
 
