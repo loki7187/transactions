@@ -16,15 +16,7 @@ public class StepData {
         return stepParams;
     }
 
-    public void setStepParams(HashMap stepParams) {
-        this.stepParams = stepParams;
-    }
-
     public Boolean getStepStatus() {
         return stepStatus;
-    }
-
-    public void setStepStatus(Boolean stepStatus) {
-        this.stepStatus = stepStatus;
     }
 }

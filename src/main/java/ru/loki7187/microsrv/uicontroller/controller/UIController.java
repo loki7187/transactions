@@ -16,7 +16,7 @@ public class UIController {
     @Autowired
     UIService uiService;
 
-    private final Long timeout = 5000L;
+    private final Long timeout = 100000000L; //10 sec
 
     @PostMapping("/increase")
     public DeferredResult<String> increaseCard(@RequestBody CardDto card){
@@ -45,14 +45,14 @@ public class UIController {
         output.onTimeout( () -> {
             System.out.println("err result");
             output.setResult("321");});
-//        output.onCompletion( () -> {
-//            try {
-//                Thread.sleep(1000);
-//                System.out.println(output.isSetOrExpired());
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
+        output.onCompletion( () -> {
+            try {
+                Thread.sleep(1000);
+                System.out.println(output.isSetOrExpired());
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
         new Thread( () -> {
             try {
                 Thread.sleep(1000);

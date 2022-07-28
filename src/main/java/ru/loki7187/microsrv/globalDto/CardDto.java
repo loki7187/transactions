@@ -11,6 +11,9 @@ public class CardDto implements Serializable {
         this.sum = sum;
     }
 
+    public CardDto() {
+    }
+
     public Long getNum() {
         return num;
     }
