@@ -1,6 +1,7 @@
 package ru.loki7187.microsrv.uicontroller.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 import ru.loki7187.microsrv.globalDto.CardDto;
@@ -13,48 +14,55 @@ import ru.loki7187.microsrv.uicontroller.service.UIService;
 public class UIController {
 
     @Autowired
-    TrnService trnService;
-
-    @Autowired
     UIService uiService;
 
+    private final Long timeout = 5000L;
+
     @PostMapping("/increase")
-    public String increaseCard(@RequestBody CardDto card){
-        var res = trnService.increaseCardRest(card, uiService.getId());
-        return res.getFirst() + " " + res.getSecond();
+    public DeferredResult<String> increaseCard(@RequestBody CardDto card){
+        DeferredResult<String> res = new DeferredResult<>(timeout);
+        uiService.increaseReq(res, card);
+        return res;
     }
 
     @PostMapping("/decrease")
-    public String decreaseCard(@RequestBody CardDto card){
-        var res = trnService.decreaseCardRest(card.getNum(), card.getSum());
-        return res.getFirst() + " " + res.getSecond();
+    public DeferredResult<String> decreaseCard(@RequestBody CardDto card){
+        DeferredResult<String> res = new DeferredResult<>(timeout);
+        uiService.decreaseReq(res, card);
+        return res;
     }
 
     @PostMapping("/makeTransaction")
-    public String makeTransaction(@RequestBody TransactionDto trn){
-        var res = trnService.makeTransactionCardToCard(trn.getNum1(), trn.getSum(), trn.getNum2());
-        return res.getLeft() + " " + res.getMiddle() + " " + res.getRight();
+    public DeferredResult<String> makeTransaction(@RequestBody TransactionDto trn){
+        DeferredResult<String> res = new DeferredResult<>(timeout);
+        uiService.trnCardToCardReq(res, trn);
+        return res;
     }
 
     @GetMapping("/tmp")
     public DeferredResult<String> tmpMethod() {
-        DeferredResult<String> output = new DeferredResult<>();
-        output.onCompletion( () -> {
-            try {
-                Thread.sleep(1000);
-                System.out.println("hfuiewhfiegfuierguerg");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        DeferredResult<String> output = new DeferredResult<>(500L);
+        output.onTimeout( () -> {
+            System.out.println("err result");
+            output.setResult("321");});
+//        output.onCompletion( () -> {
+//            try {
+//                Thread.sleep(1000);
+//                System.out.println(output.isSetOrExpired());
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
         new Thread( () -> {
             try {
                 Thread.sleep(1000);
-                output.setResult("123");
+                System.out.println("good res");
+                output.setResult("11234");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        }).run();
+        }).start();
+        System.out.println("rijeoirejgiuehrg");
         return output;
     }
 }
