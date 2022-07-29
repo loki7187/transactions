@@ -10,19 +10,18 @@ import ru.loki7187.microsrv.globalDto.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.TransactionDto;
 import ru.loki7187.microsrv.trnService.data.StepData;
 import ru.loki7187.microsrv.trnService.data.TrnData;
-import ru.loki7187.microsrv.trnService.step.CommonStepCore;
+import ru.loki7187.microsrv.trnService.step.ICommonStep;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static ru.loki7187.microsrv.globalconfig.Constants.increaseOpFromUi;
-import static ru.loki7187.microsrv.globalconfig.Constants.stepIncrease;
+import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
 @Service
 public class TrnService {
 
     @Autowired
-    List<CommonStepCore> allSteps;
+    List<ICommonStep> allSteps;
 
     @Autowired
     ApplicationContext ctx;
@@ -75,7 +74,7 @@ public class TrnService {
         // тут отработать ответ на выполнение шага
     }
 
-    @JmsListener(destination = increaseOpFromUi, containerFactory = "myFactory")
+    @JmsListener(destination = increaseOpFromUi, containerFactory = myFactory)
     public void onIncreaseOpFromUi (CardTrnDto cardTrn) {
         System.out.println(cardTrn.getCard() + " " + cardTrn.getId());
         increaseCardRest(cardTrn.getCard(), cardTrn.getId());

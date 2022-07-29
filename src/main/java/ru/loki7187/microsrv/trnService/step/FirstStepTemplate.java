@@ -1,28 +1,25 @@
 package ru.loki7187.microsrv.trnService.step;
 
-import org.springframework.stereotype.Component;
-
 import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
-@Component
-public class StepIncreaseCore implements CommonStepCore {
+public class FirstStepTemplate implements ICommonStep{
     @Override
     public String getStepId() {
-        return stepIncrease;
+        return stepFirst;
     }
 
     @Override
     public String getStepDirectOperation() {
-        return stepIncreaseOp;
+        return stepFirstOp;
     }
 
     @Override
     public String getStepRevertOperation() {
-        return stepIncreaseOpRevert;
+        return stepFirstOpRevert;
     }
 
     @Override
     public Boolean getIsParallelable() {
-        return null;
+        return false;
     }
 }

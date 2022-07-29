@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
 @Component
-public class StepDecreaseCore implements CommonStepCore {
+public class StepDecreaseTemplate implements ICommonStep {
     @Override
     public String getStepId() {
         return stepDecrease;
@@ -23,6 +23,6 @@ public class StepDecreaseCore implements CommonStepCore {
 
     @Override
     public Boolean getIsParallelable() {
-        return null;
+        return true;
     }
 }

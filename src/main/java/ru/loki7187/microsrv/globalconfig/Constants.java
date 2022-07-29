@@ -16,6 +16,14 @@ public class Constants {
     public static final String stepDecreaseOpRevert = "stepDecreaseOpRevert";
     public static final String stepDecreaseOp = "stepDecreaseOp";
 
+    public static final String stepFirst = "stepFirst";
+    public static final String stepFirstOpRevert = "stepFirstOpRevert";
+    public static final String stepFirstOp = "stepFirstOp";
+
+    public static final String stepLast = "stepLast";
+    public static final String stepLastOpRevert = "stepLastOpRevert";
+    public static final String stepLastOp = "stepLastOp";
+
     // uiSrv operations
 
     public static final String increaseOpFromUi = "increaseOpFromUi";
@@ -26,4 +34,7 @@ public class Constants {
 
     public static final String trnOpFromUi = "trnOpFromUi";
     public static final String trnOpFromUiRevert = "trnOpFromUiRevert";
+
+    // jms
+    public static final String myFactory = "myFactory";
 }

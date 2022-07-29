@@ -3,7 +3,7 @@ package ru.loki7187.microsrv.trnService.data;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
-import ru.loki7187.microsrv.trnService.step.CommonStepCore;
+import ru.loki7187.microsrv.trnService.step.ICommonStep;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,14 +12,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TrnData {
 
     // шаги транзакции (номер, шаблон, данные)
-    ConcurrentHashMap<Integer, Pair<CommonStepCore, StepData>> steps;
+    ConcurrentHashMap<Integer, Pair<ICommonStep, StepData>> steps;
 
     // ид транзакции
     Long trnId;
 
     private String trnStage;
 
-    public ConcurrentHashMap<Integer, Pair<CommonStepCore, StepData>> getSteps() {
+    public ConcurrentHashMap<Integer, Pair<ICommonStep, StepData>> getSteps() {
         return steps;
     }
 
