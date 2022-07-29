@@ -22,8 +22,8 @@ public class UIService {
     private final String direct = "direct";
     private final String revert = "revert";
 
-//    @Autowired
-//    JmsTemplate jmsTemplate;
+    @Autowired
+    JmsTemplate jmsTemplate;
     @Autowired
     ApplicationContext ctx;
 
@@ -45,7 +45,6 @@ public class UIService {
             res.setErrorResult(err);
         });
         requests.put(id, Pair.of(res, card));
-        JmsTemplate jmsTemplate = ctx.getBean(JmsTemplate.class);
         jmsTemplate.convertAndSend(increaseOpFromUi, new CardTrnDto(card, id));
     }
 

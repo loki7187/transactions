@@ -14,6 +14,7 @@ import javax.jms.ConnectionFactory;
 @Configuration
 public class GlobalBeanConfig {
 
+    //jms config
     @Bean
     public JmsListenerContainerFactory<?> myFactory(ConnectionFactory connectionFactory,
                                                     DefaultJmsListenerContainerFactoryConfigurer configurer) {
@@ -31,4 +32,6 @@ public class GlobalBeanConfig {
         converter.setTypeIdPropertyName("_type");
         return converter;
     }
+
+    // end jms config
 }
