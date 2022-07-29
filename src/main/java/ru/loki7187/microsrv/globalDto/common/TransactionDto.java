@@ -1,8 +1,8 @@
-package ru.loki7187.microsrv.globalDto;
+package ru.loki7187.microsrv.globalDto.common;
 
-import java.io.Serializable;
+import static ru.loki7187.microsrv.globalconfig.Constants.uiResultAddress;
 
-public class TransactionDto implements Serializable {
+public class TransactionDto implements IResultable {
     private Long num1;
     private Long num2;
     private Long sum;
@@ -38,5 +38,10 @@ public class TransactionDto implements Serializable {
 
     public void setSum(Long sum) {
         this.sum = sum;
+    }
+
+    @Override
+    public String getResultAddress() {
+        return uiResultAddress;
     }
 }

@@ -1,34 +1,36 @@
 package ru.loki7187.microsrv.uicontroller.service;
 
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.data.util.Pair;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
-import ru.loki7187.microsrv.globalDto.CardDto;
-import ru.loki7187.microsrv.globalDto.CardTrnDto;
-import ru.loki7187.microsrv.globalDto.TransactionDto;
+import ru.loki7187.microsrv.globalDto.common.CardDto;
+import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
+import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static ru.loki7187.microsrv.globalconfig.Constants.err;
-import static ru.loki7187.microsrv.globalconfig.Constants.increaseOpFromUi;
+import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
 @Service
 public class UIService {
 
     private final String direct = "direct";
     private final String revert = "revert";
+    private final String cardReqType = "cardReqType";
+    private final String trnReqType = "trnReqType";
 
     @Autowired
     JmsTemplate jmsTemplate;
-    @Autowired
-    ApplicationContext ctx;
+//    @Autowired
+//    ApplicationContext ctx;
 
 
-    private ConcurrentHashMap<Long, Pair<DeferredResult, Object>> requests;
+    private ConcurrentHashMap<Long, Triple<DeferredResult, Object, String>> requests;
 
     public UIService () {
         requests = new ConcurrentHashMap<>();
@@ -44,7 +46,7 @@ public class UIService {
             cancelChangeReq(card, direct);
             res.setErrorResult(err);
         });
-        requests.put(id, Pair.of(res, card));
+        requests.put(id, Triple.of(res, card, cardReqType));
         jmsTemplate.convertAndSend(increaseOpFromUi, new CardTrnDto(card, id));
     }
 
@@ -54,7 +56,7 @@ public class UIService {
             cancelChangeReq(card, revert);
             res.setErrorResult(err);
         });
-        requests.put(id, Pair.of(res, card));
+        requests.put(id, Triple.of(res, card, cardReqType));
         // TODO call trnService async
     }
 
@@ -64,7 +66,7 @@ public class UIService {
             cancelTrn(trn);
             res.setErrorResult(err);
         });
-        requests.put(id, Pair.of(res, trn));
+        requests.put(id, Triple.of(res, trn, trnReqType));
         // TODO call trnService async
     }
 
@@ -78,5 +80,11 @@ public class UIService {
 
     public void cancelTrn (TransactionDto trn){
         //TODO call trnService async
+    }
+
+    @JmsListener(destination = uiResultAddress, containerFactory = myFactory)
+    public void onRequestResult (Pair<Long, String> res) {
+        System.out.println("setting result to deferredResult");
+        requests.get(res.getFirst()).getLeft().setResult(res.getSecond());
     }
 }

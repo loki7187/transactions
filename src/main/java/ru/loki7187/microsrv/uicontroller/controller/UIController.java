@@ -1,12 +1,10 @@
 package ru.loki7187.microsrv.uicontroller.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.util.Pair;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
-import ru.loki7187.microsrv.globalDto.CardDto;
-import ru.loki7187.microsrv.globalDto.TransactionDto;
-import ru.loki7187.microsrv.trnService.service.TrnService;
+import ru.loki7187.microsrv.globalDto.common.CardDto;
+import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 import ru.loki7187.microsrv.uicontroller.service.UIService;
 
 @RestController

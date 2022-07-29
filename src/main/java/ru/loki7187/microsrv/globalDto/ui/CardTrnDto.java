@@ -1,6 +1,11 @@
-package ru.loki7187.microsrv.globalDto;
+package ru.loki7187.microsrv.globalDto.ui;
 
-public class CardTrnDto {
+import ru.loki7187.microsrv.globalDto.common.CardDto;
+import ru.loki7187.microsrv.globalDto.common.IResultable;
+
+import static ru.loki7187.microsrv.globalconfig.Constants.uiResultAddress;
+
+public class CardTrnDto implements IResultable {
     private CardDto card;
     private Long id;
 
@@ -26,5 +31,10 @@ public class CardTrnDto {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    @Override
+    public String getResultAddress() {
+        return uiResultAddress;
     }
 }

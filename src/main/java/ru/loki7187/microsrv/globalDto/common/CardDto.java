@@ -1,4 +1,4 @@
-package ru.loki7187.microsrv.globalDto;
+package ru.loki7187.microsrv.globalDto.common;
 
 import java.io.Serializable;
 

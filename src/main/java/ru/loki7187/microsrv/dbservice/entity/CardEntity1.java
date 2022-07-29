@@ -1,6 +1,6 @@
 package ru.loki7187.microsrv.dbservice.entity;
 
-import ru.loki7187.microsrv.globalDto.CardDto;
+import ru.loki7187.microsrv.globalDto.common.CardDto;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
