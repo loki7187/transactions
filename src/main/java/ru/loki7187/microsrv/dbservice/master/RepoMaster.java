@@ -1,5 +1,6 @@
 package ru.loki7187.microsrv.dbservice.master;
 
+import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.jms.annotation.JmsListener;
@@ -33,7 +34,6 @@ public class RepoMaster {
     public String increaseCardRest(CardDto card) {
         var num = card.getNum();
         var sum = card.getSum();
-        var res = success;
         switch ((int) (num % 2)){
             case 0: {
                 var cardOpt = cr.findById(num);
@@ -58,7 +58,7 @@ public class RepoMaster {
                 }
             } break;
         }
-        return res;
+        return success;
     }
 
     @Transactional
@@ -105,9 +105,7 @@ public class RepoMaster {
     @JmsListener(destination = stepIncreaseOp, containerFactory = myFactory)
     public void onStepIncreaseRest (StepData data) {
         System.out.println("onStepIncreaseRest");
-        var crd = (LinkedHashMap)data.getStepParams().get(cardParam);
-        var card = new CardDto((Long)crd.get("num"), (Long)crd.get("sum"));
-        var res = increaseCardRest((CardDto) data.getStepParams().get(cardParam));
+        var res = increaseCardRest(new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class));
         data.setStepStatus(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }

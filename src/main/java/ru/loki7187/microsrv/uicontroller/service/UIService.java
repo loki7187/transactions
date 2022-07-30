@@ -8,6 +8,7 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
+import ru.loki7187.microsrv.globalDto.common.TrnResultDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 
@@ -30,7 +31,7 @@ public class UIService {
 //    ApplicationContext ctx;
 
 
-    private ConcurrentHashMap<Long, Triple<DeferredResult, Object, String>> requests;
+    private final ConcurrentHashMap<Long, Triple<DeferredResult<String>, Object, String>> requests;
 
     public UIService () {
         requests = new ConcurrentHashMap<>();
@@ -40,7 +41,7 @@ public class UIService {
         return new Date().getTime();
     }
 
-    public void increaseReq (DeferredResult res, CardDto card) {
+    public void increaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
             cancelChangeReq(card, direct);
@@ -50,7 +51,7 @@ public class UIService {
         jmsTemplate.convertAndSend(increaseOpFromUi, new CardTrnDto(card, id));
     }
 
-    public void decreaseReq (DeferredResult res, CardDto card) {
+    public void decreaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
             cancelChangeReq(card, revert);
@@ -60,7 +61,7 @@ public class UIService {
         // TODO call trnService async
     }
 
-    public void trnCardToCardReq (DeferredResult res, TransactionDto trn) {
+    public void trnCardToCardReq (DeferredResult<String> res, TransactionDto trn) {
         var id = getId();
         res.onTimeout(() -> {
             cancelTrn(trn);
@@ -83,8 +84,8 @@ public class UIService {
     }
 
     @JmsListener(destination = uiResultAddress, containerFactory = myFactory)
-    public void onRequestResult (Pair<Long, String> res) {
+    public void onRequestResult (TrnResultDto res) {
         System.out.println("setting result to deferredResult");
-        requests.get(res.getFirst()).getLeft().setResult(res.getSecond());
+        requests.get(res.getId()).getLeft().setResult(res.getResult());
     }
 }

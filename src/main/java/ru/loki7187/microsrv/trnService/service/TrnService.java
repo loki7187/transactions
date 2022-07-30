@@ -1,5 +1,6 @@
 package ru.loki7187.microsrv.trnService.service;
 
+import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.util.Pair;
@@ -7,6 +8,7 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
+import ru.loki7187.microsrv.globalDto.common.TrnResultDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
@@ -27,7 +29,7 @@ public class TrnService {
     @Autowired
     JmsTemplate jmsTemplate;
 
-    private ConcurrentHashMap<Long, TrnData> queries;
+    private final ConcurrentHashMap<Long, TrnData> queries;
 
     public TrnService () {
         queries = new ConcurrentHashMap<>();
@@ -38,10 +40,11 @@ public class TrnService {
         trnData.setTrnId(id);
         var stepData = new StepData(id);
         //TODO надо сконвертировать card в жсон
-        stepData.getStepParams().put(cardParam, card);
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId() == stepFirst).findFirst().get(), new StepData(id)));
-        trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId() == stepIncrease).findFirst().get(), stepData));
-        trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId() == stepLast).findFirst().get(), new StepData(id)));
+        var cardJson = new Gson().toJson(card, CardDto.class);
+        stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
+        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
+        trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
+        trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
         queries.put(id, trnData);
         runNextStep(trnData);
     }
@@ -51,8 +54,8 @@ public class TrnService {
         var trnData = new TrnData(resultAddress);
         trnData.setTrnId(id);
         var stepData = new StepData(id);
-        stepData.getStepParams().put(cardParam, card);
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId() == stepIncrease).findFirst().get(), stepData));
+        stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
+        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
         Pair<String, CardDto> res = null;
         return res;
     }
@@ -62,18 +65,17 @@ public class TrnService {
         var trnData = new TrnData(resultAddress);
         trnData.setTrnId(id);
         var stepData = new StepData(id);
-        stepData.getStepParams().put("TrnDto", trn);
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId() == stepIncrease).findFirst().get(), stepData));
+        stepData.getStepParams().put(trnParam, new Gson().toJson(trn, TransactionDto.class));
+        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
         Pair<String, TransactionDto> res = null;
         return res;
     }
 
     //TODO доделать
     public void runNextStep (TrnData data) {
-        var currStep = data.getNextStep();
-        if (currStep.isPresent()) {
-            jmsTemplate.convertAndSend(currStep.get().getFirst().getStepDirectOperation(), currStep.get().getSecond());
-        }
+        data.getNextStep().ifPresent(
+                step -> jmsTemplate.convertAndSend(step.getFirst().getStepDirectOperation(), step.getSecond())
+        );
     }
 
     //TODO доделать
@@ -106,6 +108,6 @@ public class TrnService {
         data.setStepStatus(success);
         var trnData = queries.get(data.getTrnId());
         trnData.setTrnStage(completed);
-        jmsTemplate.convertAndSend(trnData.getResultAddress(), Pair.of(trnData.getTrnId(), completed));
+        jmsTemplate.convertAndSend(trnData.getResultAddress(), new TrnResultDto(trnData.getTrnId(), completed));
     }
 }

@@ -26,6 +26,7 @@ public class Constants {
     public static final String stepLastOp = "stepLastOp";
     public static final String trnResultAddress = "trnResultAddress";
     public static final String cardParam = "cardParam";
+    public static final String trnParam = "trnParam";
 
     //trnStages
     public static final String preparation = "preparation";

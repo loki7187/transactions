@@ -9,23 +9,23 @@ import static ru.loki7187.microsrv.globalconfig.Constants.trnResultAddress;
 
 public class StepData implements IResultable {
 
-    private HashMap stepParams;
+    private final HashMap<String, String> stepParams;
     private String stepStatus;
 
     private Long trnId;
 
     public StepData() {
-        this.stepParams = new HashMap();
+        this.stepParams = new HashMap<>();
         this.stepStatus = emptyStepStatus;
     }
 
     public StepData(Long id) {
-        this.stepParams = new HashMap();
+        this.stepParams = new HashMap<>();
         this.stepStatus = emptyStepStatus;
         this.trnId = id;
     }
 
-    public HashMap getStepParams() {
+    public HashMap<String, String> getStepParams() {
         return stepParams;
     }
 
