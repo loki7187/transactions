@@ -9,6 +9,7 @@ import org.springframework.data.util.Pair;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.common.TrnResultDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
@@ -17,6 +18,7 @@ import ru.loki7187.microsrv.globalDto.trnservice.StepData;
 import ru.loki7187.microsrv.globalDto.trnservice.TrnData;
 import ru.loki7187.microsrv.trnService.step.ICommonStep;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +34,7 @@ public class TrnService {
     JmsTemplate jmsTemplate;
 
     //TODO переделать на хранение в бд
-    private final ConcurrentHashMap<Long, TrnData> queries;
+    private final ConcurrentHashMap<Long, Pair<TrnData, ArrayList<Long>>> queries;
 
     private final Logger logger = LoggerFactory.getLogger(TrnService.class);
 
@@ -40,14 +42,16 @@ public class TrnService {
         queries = new ConcurrentHashMap<>();
     }
 
+    @Transactional
     public void increaseCardRest(CardDto card, Long id, String resultAddress) {
         var trnData = new TrnData(resultAddress, id);
         var stepData = new StepData(id);
+        var cardList = new ArrayList<>(List.of(card.getNum()));
         stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
         trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
         trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
         trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
-        queries.put(id, trnData);
+        queries.put(id, Pair.of(trnData, cardList));
         runNextStep(trnData);
     }
 
@@ -55,32 +59,45 @@ public class TrnService {
     public void decreaseCardRest(CardDto card, Long id, String resultAddress) {
         var trnData = new TrnData(resultAddress, id);
         var stepData = new StepData(id);
+        var cardList = new ArrayList<>(List.of(card.getNum()));
         stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
         trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
         trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepDecrease)).findFirst().get(), stepData));
         trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
-        queries.put(id, trnData);
+        queries.put(id, Pair.of(trnData, cardList));
         runNextStep(trnData);
     }
 
     //TODO доделать
-    public Pair<String, TransactionDto> makeTransactionCardToCard (TransactionDto trn , Long id, String resultAddress) {
+    public void makeTransactionCardToCard (TransactionDto trn , Long id, String resultAddress) {
         var trnData = new TrnData(resultAddress, id);
-        var stepData = new StepData(id);
-        stepData.getStepParams().put(trnParam, new Gson().toJson(trn, TransactionDto.class));
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
-        Pair<String, TransactionDto> res = null;
-        return res;
+        var stepData1 = new StepData(id);
+        var stepData2 = new StepData(id);
+        var cardList = new ArrayList<>(List.of(trn.getNum1(), trn.getNum2()));
+
+        stepData1.getStepParams().put(cardParam, new Gson().toJson(new CardDto(trn.getNum1(),trn.getSum()), CardDto.class));
+        stepData2.getStepParams().put(cardParam, new Gson().toJson(new CardDto(trn.getNum2(),trn.getSum()), CardDto.class));
+
+        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
+        trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepDecrease)).findFirst().get(), stepData1));
+        trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData2));
+        trnData.getSteps().put(4, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
+        queries.put(id, Pair.of(trnData, cardList));
+        runNextStep(trnData);
     }
 
     //TODO доделать
+    @Transactional
     public void runNextStep (TrnData data) {
         data.getNextStep().ifPresent(
-                step -> jmsTemplate.convertAndSend(step.getValue().getSecond().getStepDirection().equals(directionDirect)
-                                ? step.getValue().getFirst().getStepDirectOperation()
-                                : step.getValue().getFirst().getStepRevertOperation()
-                        , step.getValue().getSecond())
-        );
+                (step) -> {
+                    if (step.getValue().getSecond().getStepDirection().equals(directionDirect)){step.getValue().getSecond().setStepStatus(directOpDone);}
+                    else {step.getValue().getSecond().setStepStatus(revertOpDone);}
+                    jmsTemplate.convertAndSend(step.getValue().getSecond().getStepDirection().equals(directionDirect)
+                                    ? step.getValue().getFirst().getStepDirectOperation()
+                                    : step.getValue().getFirst().getStepRevertOperation()
+                            , step.getValue().getSecond());
+                });
     }
 
     //TODO не забыть посмотреть, где нужна @Transactional
@@ -89,9 +106,9 @@ public class TrnService {
     @JmsListener(destination = trnResultAddress, containerFactory = myFactory)
     public void onStepResult(StepData data) {
         if (data.getStepResult().equals(success)){
-            runNextStep(queries.get(data.getTrnId()));
+            runNextStep(queries.get(data.getTrnId()).getFirst());
         } else {
-            var trnData = queries.get(data.getTrnId());
+            var trnData = queries.get(data.getTrnId()).getFirst();
             trnData.setTrnStage(trnErr);
             trnData.setTrnResult(data.getStepResult());
             trnData.getSteps().entrySet().stream()
@@ -104,37 +121,51 @@ public class TrnService {
     @JmsListener(destination = increaseOpFromUi, containerFactory = myFactory)
     public void onIncreaseOpFromUi (CardTrnDto cardTrn) {
         logger.debug("onIncreaseOpFromUi");
-        increaseCardRest(cardTrn.getCard(), cardTrn.getId(), cardTrn.getResultAddress());
+        if (checkAnotherOpForCardInProcess(cardTrn)){
+            increaseCardRest(cardTrn.getCard(), cardTrn.getId(), cardTrn.getResultAddress());
+        } else {
+            jmsTemplate.convertAndSend(cardTrn.getResultAddress(), new TrnResultDto(cardTrn.getId(), anotherOpInProcess));
+        }
     }
 
     @JmsListener(destination = decreaseOpFromUi, containerFactory = myFactory)
     public void onDecreaseOpFromUi (CardTrnDto cardTrn) {
         logger.debug("onDecreaseOpFromUi");
-        decreaseCardRest(cardTrn.getCard(), cardTrn.getId(), cardTrn.getResultAddress());
+        if (checkAnotherOpForCardInProcess(cardTrn)){
+            decreaseCardRest(cardTrn.getCard(), cardTrn.getId(), cardTrn.getResultAddress());
+        } else {
+            jmsTemplate.convertAndSend(cardTrn.getResultAddress(), new TrnResultDto(cardTrn.getId(), anotherOpInProcess));
+        }
     }
 
     @JmsListener(destination = stepFirstOp, containerFactory = myFactory)
     public void onStepFirst(StepData data) {
         logger.debug("first step");
-        queries.get(data.getTrnId()).setTrnStage(inProcess);
+        queries.get(data.getTrnId()).getFirst().setTrnStage(inProcess);
         data.setStepResult(success);
-        data.setStepStatus(directOpDone);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
 
     //либо это последний шаг, либо обратный для первого
+    @Transactional
     @JmsListener(destination = stepLastOp, containerFactory = myFactory)
     public void onStepLast(StepData data) {
         logger.debug("last step");
-        var trnData = queries.get(data.getTrnId());
+        var trnData = queries.get(data.getTrnId()).getFirst();
         if (trnData.getTrnStage().equals(inProcess) && trnData.getTrnResult().equals(trnEmptyResult)){
             data.setStepResult(success);
-            data.setStepStatus(directOpDone);
             trnData.setTrnStage(completed);
             trnData.setTrnResult(success);
-        } else {
-            data.setStepStatus(revertOpDone);
         }
+        queries.remove(data.getTrnId());
         jmsTemplate.convertAndSend(trnData.getResultAddress(), new TrnResultDto(trnData.getTrnId(), trnData.getTrnResult()));
+    }
+
+    private Boolean checkAnotherOpForCardInProcess (CardTrnDto cardTrn) {
+        return queries.values().stream().
+                filter(e -> !e.getFirst().getTrnStage().equals(completed))
+                .flatMap(e -> e.getSecond().stream())
+                .filter(e -> e.equals(cardTrn))
+                .count() == 0;
     }
 }
