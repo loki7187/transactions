@@ -21,8 +21,8 @@ public class LastStepTemplate implements ICommonStep{
         return stepLastOpRevert;
     }
 
-    @Override
-    public Boolean getIsParallelable() {
-        return false;
-    }
+//    @Override
+//    public Boolean getIsParallelable() {
+//        return false;
+//    }
 }

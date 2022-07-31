@@ -67,18 +67,18 @@ public class RepoMaster {
     }
 
     @Transactional
-    public Pair<String, CardDto> decreaseCardRest(Long num, Long sum) {
-        CardDto cardDto = new CardDto(0L, 0L);
+    public String decreaseCardRest(CardDto card) {
+        var num = card.getNum();
+        var sum = card.getSum();
         var res = success;
         switch ((int) (num % 2)){
             case 0: {
                 var cardOpt = cr.findById(num);
                 if (cardOpt.isPresent()) {
-                    var card = cardOpt.get();
-                    if (card.getRest() >= sum){
-                        card.setRest(card.getRest() - sum);
-                        cr.save(card);
-                        cardDto = card.getCardDtoView();
+                    var cardEntity = cardOpt.get();
+                    if (cardEntity.getRest() >= sum){
+                        cardEntity.setRest(cardEntity.getRest() - sum);
+                        cr.save(cardEntity);
                     }
                     else {
                         res = notEnoughtMoney;
@@ -90,11 +90,10 @@ public class RepoMaster {
             case 1: {
                 var cardOpt = cr1.findById(num);
                 if (cardOpt.isPresent()) {
-                    var card = cardOpt.get();
-                    if (card.getRest() >= sum){
-                        card.setRest(card.getRest() - sum);
-                        cr1.save(card);
-                        cardDto = card.getCardDtoView();
+                    var cardEntity = cardOpt.get();
+                    if (cardEntity.getRest() >= sum){
+                        cardEntity.setRest(cardEntity.getRest() - sum);
+                        cr1.save(cardEntity);
                     }
                     else {
                         res = notEnoughtMoney;
@@ -104,14 +103,42 @@ public class RepoMaster {
                 }
             } break;
         }
-        return Pair.of(res, cardDto);
+        return res;
     }
 
     @JmsListener(destination = stepIncreaseOp, containerFactory = myFactory)
     public void onStepIncreaseRest (StepData data) {
         logger.debug("onStepIncreaseRest");
         var res = increaseCardRest(new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class));
-        data.setStepStatus(res);
+        data.setStepResult(res);
+        data.setStepStatus(directOpDone);
+        jmsTemplate.convertAndSend(data.getResultAddress(), data);
+    }
+
+    @JmsListener(destination = stepIncreaseOpRevert, containerFactory = myFactory)
+    public void onStepIncreaseRestRevert (StepData data) {
+        logger.debug("onStepIncreaseRestRevert");
+        var res = decreaseCardRest(new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class));
+        data.setStepResult(res);
+        data.setStepStatus(revertOpDone);
+        jmsTemplate.convertAndSend(data.getResultAddress(), data);
+    }
+
+    @JmsListener(destination = stepDecreaseOp, containerFactory = myFactory)
+    public void onStepDecreaseRest (StepData data) {
+        logger.debug("onStepDecreaseRest");
+        var res = decreaseCardRest(new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class));
+        data.setStepResult(res);
+        data.setStepStatus(directOpDone);
+        jmsTemplate.convertAndSend(data.getResultAddress(), data);
+    }
+
+    @JmsListener(destination = stepDecreaseOpRevert, containerFactory = myFactory)
+    public void onStepDecreaseRestRevert (StepData data) {
+        logger.debug("onStepDecreaseRestRevert");
+        var res = increaseCardRest(new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class));
+        data.setStepResult(res);
+        data.setStepStatus(revertOpDone);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
 

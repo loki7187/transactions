@@ -4,5 +4,5 @@ public interface ICommonStep {
     String getStepId();
     String getStepDirectOperation();
     String getStepRevertOperation();
-    Boolean getIsParallelable();
+//    Boolean getIsParallelable();
 }

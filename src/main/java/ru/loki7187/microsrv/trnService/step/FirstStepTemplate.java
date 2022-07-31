@@ -18,11 +18,11 @@ public class FirstStepTemplate implements ICommonStep{
 
     @Override
     public String getStepRevertOperation() {
-        return stepFirstOpRevert;
+        return stepLastOp;
     }
 
-    @Override
-    public Boolean getIsParallelable() {
-        return false;
-    }
+//    @Override
+//    public Boolean getIsParallelable() {
+//        return false;
+//    }
 }

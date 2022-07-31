@@ -41,8 +41,7 @@ public class TrnService {
     }
 
     public void increaseCardRest(CardDto card, Long id, String resultAddress) {
-        var trnData = new TrnData(resultAddress);
-        trnData.setTrnId(id);
+        var trnData = new TrnData(resultAddress, id);
         var stepData = new StepData(id);
         stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
         trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
@@ -54,8 +53,7 @@ public class TrnService {
 
     //TODO доделать
     public void decreaseCardRest(CardDto card, Long id, String resultAddress) {
-        var trnData = new TrnData(resultAddress);
-        trnData.setTrnId(id);
+        var trnData = new TrnData(resultAddress, id);
         var stepData = new StepData(id);
         stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
         trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
@@ -67,8 +65,7 @@ public class TrnService {
 
     //TODO доделать
     public Pair<String, TransactionDto> makeTransactionCardToCard (TransactionDto trn , Long id, String resultAddress) {
-        var trnData = new TrnData(resultAddress);
-        trnData.setTrnId(id);
+        var trnData = new TrnData(resultAddress, id);
         var stepData = new StepData(id);
         stepData.getStepParams().put(trnParam, new Gson().toJson(trn, TransactionDto.class));
         trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
@@ -79,25 +76,26 @@ public class TrnService {
     //TODO доделать
     public void runNextStep (TrnData data) {
         data.getNextStep().ifPresent(
-                step -> jmsTemplate.convertAndSend(step.getValue().getFirst().getStepDirectOperation()
+                step -> jmsTemplate.convertAndSend(step.getValue().getSecond().getStepDirection().equals(directionDirect)
+                                ? step.getValue().getFirst().getStepDirectOperation()
+                                : step.getValue().getFirst().getStepRevertOperation()
                         , step.getValue().getSecond())
         );
     }
 
-    //TODO не забыть посмотреть, где нужна @Transactionsl
-
-    //TODO доделать
-    //TODO не забыть, что окончание транзакции вынесено в отдельный шаг, тут делать ничего не надо
+    //TODO не забыть посмотреть, где нужна @Transactional
+    //TODO cancel operations
     // зато надо обработать ошибки и revert операции
     @JmsListener(destination = trnResultAddress, containerFactory = myFactory)
     public void onStepResult(StepData data) {
-        if (data.getStepStatus().equals(success)){
+        if (data.getStepResult().equals(success)){
             runNextStep(queries.get(data.getTrnId()));
         } else {
             var trnData = queries.get(data.getTrnId());
             trnData.setTrnStage(trnErr);
+            trnData.setTrnResult(data.getStepResult());
             trnData.getSteps().entrySet().stream()
-                    .filter(e -> !e.getValue().getSecond().getStepStatus().equals(emptyStepStatus))
+                    .filter(e -> e.getValue().getSecond().getStepStatus().equals(directOpDone))
                             .forEach(e -> e.getValue().getSecond().setStepDirection(directionRevert));
             runNextStep(trnData);
         }
@@ -119,16 +117,24 @@ public class TrnService {
     public void onStepFirst(StepData data) {
         logger.debug("first step");
         queries.get(data.getTrnId()).setTrnStage(inProcess);
-        data.setStepStatus(success);
+        data.setStepResult(success);
+        data.setStepStatus(directOpDone);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
 
+    //либо это последний шаг, либо обратный для первого
     @JmsListener(destination = stepLastOp, containerFactory = myFactory)
     public void onStepLast(StepData data) {
         logger.debug("last step");
-        data.setStepStatus(success);
         var trnData = queries.get(data.getTrnId());
-        trnData.setTrnStage(completed);
-        jmsTemplate.convertAndSend(trnData.getResultAddress(), new TrnResultDto(trnData.getTrnId(), completed));
+        if (trnData.getTrnStage().equals(inProcess) && trnData.getTrnResult().equals(trnEmptyResult)){
+            data.setStepResult(success);
+            data.setStepStatus(directOpDone);
+            trnData.setTrnStage(completed);
+            trnData.setTrnResult(success);
+        } else {
+            data.setStepStatus(revertOpDone);
+        }
+        jmsTemplate.convertAndSend(trnData.getResultAddress(), new TrnResultDto(trnData.getTrnId(), trnData.getTrnResult()));
     }
 }

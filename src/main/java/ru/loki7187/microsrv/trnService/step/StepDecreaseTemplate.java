@@ -21,8 +21,8 @@ public class StepDecreaseTemplate implements ICommonStep {
         return stepDecreaseOpRevert;
     }
 
-    @Override
-    public Boolean getIsParallelable() {
-        return true;
-    }
+//    @Override
+//    public Boolean getIsParallelable() {
+//        return true;
+//    }
 }

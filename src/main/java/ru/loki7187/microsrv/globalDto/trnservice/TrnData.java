@@ -16,16 +16,16 @@ import static ru.loki7187.microsrv.globalconfig.Constants.*;
 public class TrnData {
 
     // шаги транзакции (номер, шаблон, данные)
-    private ConcurrentHashMap<Integer, Pair<ICommonStep, StepData>> steps;
+    private final ConcurrentHashMap<Integer, Pair<ICommonStep, StepData>> steps = new ConcurrentHashMap<>();
 
     // ид транзакции
-    private Long trnId;
+    private Long trnId = 0L;
 
-    private String trnStage;
+    private String trnStage = preparation;
 
-    private String trnResult;
+    private String trnResult = trnEmptyResult;
 
-    private String resultAddress;
+    private String resultAddress = "";
 
     public String getResultAddress() {
         return resultAddress;
@@ -48,31 +48,23 @@ public class TrnData {
     }
 
     public TrnData() {
-
-        this.steps = new ConcurrentHashMap<>();
-        this.trnStage = preparation;
-        this.resultAddress = "";
-        this.trnResult = trnEmptyResult;
     }
 
-    public TrnData(String resultAddress_) {
-
-        this.steps = new ConcurrentHashMap<>();
-        this.trnStage = preparation;
+    public TrnData(String resultAddress_, Long id) {
         this.resultAddress = resultAddress_;
-        this.trnResult = trnEmptyResult;
+        this.trnId = id;
     }
 
     public Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> getNextStep() {
         Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> res;
         if (trnStage.equals(preparation) || trnStage.equals(inProcess)) {
             res = steps.entrySet().stream().sorted()
-                    .filter(e -> e.getValue().getSecond().getStepStatus().equals(emptyStepStatus))
+                    .filter(e -> e.getValue().getSecond().getStepStatus().equals(emptyStepStatus) && e.getValue().getSecond().getStepDirection().equals(directionDirect))
                     .findFirst();
         }
         else {
             res = steps.entrySet().stream().sorted( (e1, e2) -> e1.getKey() <= e2.getKey() ? -1 : 1)
-                    .filter(e -> e.getValue().getSecond().getStepDirection().equals(directionRevert))
+                    .filter(e -> e.getValue().getSecond().getStepDirection().equals(directionRevert) && e.getValue().getSecond().getStepStatus().equals(directOpDone))
                     .findFirst();
         }
         return res;

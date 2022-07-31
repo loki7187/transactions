@@ -17,7 +17,7 @@ public class Constants {
     public static final String stepDecreaseOp = "stepDecreaseOp";
 
     public static final String stepFirst = "stepFirst";
-    public static final String stepFirstOpRevert = "stepFirstOpRevert";
+//    public static final String stepFirstOpRevert = "stepFirstOpRevert"; вызывается последний шаг с нужными параметрами
     public static final String stepFirstOp = "stepFirstOp";
 
     public static final String stepLast = "stepLast";

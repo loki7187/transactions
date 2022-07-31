@@ -8,28 +8,20 @@ import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
 public class StepData implements IResultable {
 
-    private final HashMap<String, String> stepParams;
-    private String stepStatus;
+    private final HashMap<String, String> stepParams = new HashMap<>();
+    private String stepStatus = emptyStepStatus;
 
-    private String stepResult;
+    private String stepResult = emptyStepResult;
 
-    private Long trnId;
+    private Long trnId = 0L;
 
-    private String stepDirection;
+    private String stepDirection = directionDirect;
 
     public StepData() {
-        this.stepParams = new HashMap<>();
-        this.stepStatus = emptyStepStatus;
-        this.stepDirection = directionDirect;
-        this.stepResult = emptyStepResult;
     }
 
     public StepData(Long id) {
-        this.stepParams = new HashMap<>();
-        this.stepStatus = emptyStepStatus;
         this.trnId = id;
-        this.stepDirection = directionDirect;
-        this.stepResult = emptyStepResult;
     }
 
     public HashMap<String, String> getStepParams() {
