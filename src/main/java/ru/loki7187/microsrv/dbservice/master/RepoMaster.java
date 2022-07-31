@@ -142,4 +142,6 @@ public class RepoMaster {
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
 
+
+    //TODO добавить историзацию транзакций для проверки реверт - операций (по наличию ид операции)
 }

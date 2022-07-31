@@ -92,4 +92,6 @@ public class UIService {
         logger.debug("setting result to deferredResult");
         requests.get(res.getId()).getLeft().setResult(res.getResult());
     }
+
+    //TODO проверить повторный приход ответа
 }
