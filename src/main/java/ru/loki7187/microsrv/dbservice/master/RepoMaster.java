@@ -1,6 +1,8 @@
 package ru.loki7187.microsrv.dbservice.master;
 
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.jms.annotation.JmsListener;
@@ -13,6 +15,7 @@ import ru.loki7187.microsrv.dbservice.entity.CardEntity;
 import ru.loki7187.microsrv.dbservice.entity.CardEntity1;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
+import ru.loki7187.microsrv.uicontroller.service.UIService;
 
 import java.util.LinkedHashMap;
 
@@ -29,6 +32,8 @@ public class RepoMaster {
 
     @Autowired
     JmsTemplate jmsTemplate;
+
+    private final Logger logger = LoggerFactory.getLogger(RepoMaster.class);
 
     @Transactional
     public String increaseCardRest(CardDto card) {
@@ -104,7 +109,7 @@ public class RepoMaster {
 
     @JmsListener(destination = stepIncreaseOp, containerFactory = myFactory)
     public void onStepIncreaseRest (StepData data) {
-        System.out.println("onStepIncreaseRest");
+        logger.debug("onStepIncreaseRest");
         var res = increaseCardRest(new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class));
         data.setStepStatus(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);

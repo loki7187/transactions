@@ -7,6 +7,8 @@ import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 import ru.loki7187.microsrv.uicontroller.service.UIService;
 
+import static ru.loki7187.microsrv.globalconfig.Constants.globalTimeout;
+
 @RestController
 @RequestMapping("/cardTransactions")
 public class UIController {
@@ -14,32 +16,32 @@ public class UIController {
     @Autowired
     UIService uiService;
 
-    private final Long timeout = 100000000L; //10 sec
+//    private final Long timeout = 100000000L; //10 sec
 
     @PostMapping("/increase")
     public DeferredResult<String> increaseCard(@RequestBody CardDto card){
-        DeferredResult<String> res = new DeferredResult<>(timeout);
+        DeferredResult<String> res = new DeferredResult<>(globalTimeout);
         uiService.increaseReq(res, card);
         return res;
     }
 
     @PostMapping("/decrease")
     public DeferredResult<String> decreaseCard(@RequestBody CardDto card){
-        DeferredResult<String> res = new DeferredResult<>(timeout);
+        DeferredResult<String> res = new DeferredResult<>(globalTimeout);
         uiService.decreaseReq(res, card);
         return res;
     }
 
     @PostMapping("/makeTransaction")
     public DeferredResult<String> makeTransaction(@RequestBody TransactionDto trn){
-        DeferredResult<String> res = new DeferredResult<>(timeout);
+        DeferredResult<String> res = new DeferredResult<>(globalTimeout);
         uiService.trnCardToCardReq(res, trn);
         return res;
     }
 
     @GetMapping("/tmp")
     public DeferredResult<String> tmpMethod() {
-        DeferredResult<String> output = new DeferredResult<>(500L);
+        DeferredResult<String> output = new DeferredResult<>(globalTimeout);
         output.onTimeout( () -> {
             System.out.println("err result");
             output.setResult("321");});

@@ -2,12 +2,11 @@ package ru.loki7187.microsrv.globalconfig;
 
 public class Constants {
 
-    // result/return, empty
+    //global result/return
     public static final String success = "success";
     public static final String notEnoughtMoney = "notEnoughtMoney";
     public static final String cardNotFound = "cardNotFound";
     public static final String err = "err";
-    public static final String emptyStepStatus = "emptyStepStatus";
 
     // trnSrvOperations
     public static final String stepIncrease = "stepIncrease";
@@ -32,9 +31,25 @@ public class Constants {
     public static final String preparation = "preparation";
     public static final String inProcess = "inProcess";
     public static final String completed = "completed";
+    public static final String canceled = "canceled";
+    public static final String trnErr = "trnErr";
+
+    //trn results
+    public static final String trnEmptyResult = "trnEmptyResult";
+
+    //step directions
+    public static final String directionDirect = "directionDirect";
+    public static final String directionRevert = "directionRevert";
+
+    //step statuses
+    public static final String emptyStepStatus = "emptyStepStatus";
+    public static final String directOpDone = "directOpDone";
+    public static final String revertOpDone = "revertOpDone";
+
+    //step results
+    public static final String emptyStepResult = "emptyStepResult";
 
     // uiSrv operations
-
     public static final String increaseOpFromUi = "increaseOpFromUi";
     public static final String increaseOpFromUiRevert = "increaseOpFromUiRevert";
 
@@ -48,4 +63,6 @@ public class Constants {
 
     // jms
     public static final String myFactory = "myFactory";
+
+    public static Long globalTimeout = 5000L;
 }

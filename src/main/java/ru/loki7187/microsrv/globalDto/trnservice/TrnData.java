@@ -6,10 +6,12 @@ import org.springframework.stereotype.Component;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
 import ru.loki7187.microsrv.trnService.step.ICommonStep;
 
+import java.util.Comparator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static ru.loki7187.microsrv.globalconfig.Constants.preparation;
+import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
 public class TrnData {
 
@@ -21,7 +23,7 @@ public class TrnData {
 
     private String trnStage;
 
-    private Integer currentStep;
+    private String trnResult;
 
     private String resultAddress;
 
@@ -49,23 +51,29 @@ public class TrnData {
 
         this.steps = new ConcurrentHashMap<>();
         this.trnStage = preparation;
-        this.currentStep = 1;
         this.resultAddress = "";
+        this.trnResult = trnEmptyResult;
     }
 
     public TrnData(String resultAddress_) {
 
         this.steps = new ConcurrentHashMap<>();
         this.trnStage = preparation;
-        this.currentStep = 1;
         this.resultAddress = resultAddress_;
+        this.trnResult = trnEmptyResult;
     }
 
-    public Optional<Pair<ICommonStep, StepData>> getNextStep() {
-        Optional<Pair<ICommonStep, StepData>> res = Optional.empty();
-        if (steps.containsKey(currentStep)) {
-            res = Optional.of(steps.get(currentStep));
-            currentStep++;
+    public Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> getNextStep() {
+        Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> res;
+        if (trnStage.equals(preparation) || trnStage.equals(inProcess)) {
+            res = steps.entrySet().stream().sorted()
+                    .filter(e -> e.getValue().getSecond().getStepStatus().equals(emptyStepStatus))
+                    .findFirst();
+        }
+        else {
+            res = steps.entrySet().stream().sorted( (e1, e2) -> e1.getKey() <= e2.getKey() ? -1 : 1)
+                    .filter(e -> e.getValue().getSecond().getStepDirection().equals(directionRevert))
+                    .findFirst();
         }
         return res;
     }
@@ -76,5 +84,13 @@ public class TrnData {
 
     public void setTrnStage(String trnStage) {
         this.trnStage = trnStage;
+    }
+
+    public String getTrnResult() {
+        return trnResult;
+    }
+
+    public void setTrnResult(String trnResult) {
+        this.trnResult = trnResult;
     }
 }

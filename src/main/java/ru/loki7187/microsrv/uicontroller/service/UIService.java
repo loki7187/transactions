@@ -1,6 +1,8 @@
 package ru.loki7187.microsrv.uicontroller.service;
 
 import org.apache.commons.lang3.tuple.Triple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.jms.annotation.JmsListener;
@@ -11,6 +13,7 @@ import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.common.TrnResultDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
+import ru.loki7187.microsrv.trnService.service.TrnService;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +33,7 @@ public class UIService {
 //    @Autowired
 //    ApplicationContext ctx;
 
+    private final Logger logger = LoggerFactory.getLogger(UIService.class);
 
     private final ConcurrentHashMap<Long, Triple<DeferredResult<String>, Object, String>> requests;
 
@@ -58,7 +62,7 @@ public class UIService {
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, card, cardReqType));
-        // TODO call trnService async
+        jmsTemplate.convertAndSend(decreaseOpFromUi, new CardTrnDto(card, id));
     }
 
     public void trnCardToCardReq (DeferredResult<String> res, TransactionDto trn) {
@@ -85,7 +89,7 @@ public class UIService {
 
     @JmsListener(destination = uiResultAddress, containerFactory = myFactory)
     public void onRequestResult (TrnResultDto res) {
-        System.out.println("setting result to deferredResult");
+        logger.debug("setting result to deferredResult");
         requests.get(res.getId()).getLeft().setResult(res.getResult());
     }
 }
