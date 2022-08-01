@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.util.Pair;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
@@ -40,8 +41,6 @@ public class RepoMaster {
     @Transactional
     public String increaseCardRest(StepData data, String direction) {
         var card = new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class);
-        var num = card.getNum();
-        var sum = card.getSum();
         var id = data.getTrnId();
         var existsOp = checkOpHist(id);
 
@@ -51,29 +50,13 @@ public class RepoMaster {
 
             if (direction.equals(directionDirect) && existsOp.getSecond() == false){
                 //если всё ок, обратной операции нет, ввыполняем прямую
-                switch ((int) (num % 2)) {
+                switch ((int) (card.getNum() % 2)) {
                     case 0: {
-                        var cardOpt = cr.findById(num);
-                        if (cardOpt.isPresent()) {
-                            var cardEntity = cardOpt.get();
-                            cardEntity.setRest(cardEntity.getRest() + sum);
-                            cr.save(cardEntity);
-                        } else {
-                            var cardEntity = new CardEntity(num, sum);
-                            cr.save(cardEntity);
-                        }
+                        cardIncreaseOp(cr, true, card);
                     }
                     break;
                     case 1: {
-                        var cardOpt = cr1.findById(num);
-                        if (cardOpt.isPresent()) {
-                            var cardEntity = cardOpt.get();
-                            cardEntity.setRest(cardEntity.getRest() + sum);
-                            cr1.save(cardEntity);
-                        } else {
-                            var cardEntity = new CardEntity1(num, sum);
-                            cr1.save(cardEntity);
-                        }
+                        cardIncreaseOp(cr1, true, card);
                     }
                     break;
                 }
@@ -85,31 +68,43 @@ public class RepoMaster {
                 // если не было прямой, а уже делаем обратную, то ничего не делаем, но делаем об этом запись, чтобы не ползать повторно (в конце)
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == true) {
                 //прямая операция была, обратной ещё не было
-                switch ((int) (num % 2)) {
+                switch ((int) (card.getNum() % 2)) {
                     case 0: {
-                        var cardOpt = cr.findById(num);
-                        if (cardOpt.isPresent()) {
-                            var cardEntity = cardOpt.get();
-                            cardEntity.setRest(cardEntity.getRest() - sum);
-                            cr.save(cardEntity);
-                        }
+                        cardIncreaseOp(cr, false, card);
                     }
                     break;
                     case 1: {
-                        var cardOpt = cr1.findById(num);
-                        if (cardOpt.isPresent()) {
-                            var cardEntity = cardOpt.get();
-                            cardEntity.setRest(cardEntity.getRest() - sum);
-                            cr1.save(cardEntity);
-                        }
+                        cardIncreaseOp(cr1, false, card);
                     }
                     break;
                 }
             }
-            var hist = new OpHistoryEntity(id, direction, num);
+            var hist = new OpHistoryEntity(id, direction, card.getNum());
             opHistory.save(hist);
         }
         return success;
+    }
+
+    private <T extends CrudRepository> void cardIncreaseOp (T repo, boolean isIncrease, CardDto card) {
+
+        if (isIncrease) {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity) cardOpt.get();
+                cardEntity.setRest(cardEntity.getRest() + card.getSum());
+                repo.save(cardEntity);
+            } else {
+                var cardEntity = new CardEntity(card.getNum(), card.getSum());
+                repo.save(cardEntity);
+            }
+        } else {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity)cardOpt.get();
+                cardEntity.setRest(cardEntity.getRest() - card.getSum());
+                repo.save(cardEntity);
+            }
+        }
     }
 
     @Transactional
@@ -129,34 +124,10 @@ public class RepoMaster {
                 //если всё ок, обратной операции нет, ввыполняем прямую
                 switch ((int) (num % 2)){
                     case 0: {
-                        var cardOpt = cr.findById(num);
-                        if (cardOpt.isPresent()) {
-                            var cardEntity = cardOpt.get();
-                            if (cardEntity.getRest() >= sum){
-                                cardEntity.setRest(cardEntity.getRest() - sum);
-                                cr.save(cardEntity);
-                            }
-                            else {
-                                res = notEnoughtMoney;
-                            }
-                        } else {
-                            res = cardNotFound;
-                        }
+                        res = cardDecreaseOp(cr, true, card);
                     } break;
                     case 1: {
-                        var cardOpt = cr1.findById(num);
-                        if (cardOpt.isPresent()) {
-                            var cardEntity = cardOpt.get();
-                            if (cardEntity.getRest() >= sum){
-                                cardEntity.setRest(cardEntity.getRest() - sum);
-                                cr1.save(cardEntity);
-                            }
-                            else {
-                                res = notEnoughtMoney;
-                            }
-                        } else {
-                            res = cardNotFound;
-                        }
+                        res = cardDecreaseOp(cr1, true, card);
                     } break;
                 }
             } else if (direction.equals(directionDirect) && existsOp.getSecond() == true) {
@@ -169,20 +140,10 @@ public class RepoMaster {
                 if (data.getStepResult().equals(success)) {
                     switch ((int) (num % 2)){
                         case 0: {
-                            var cardOpt = cr.findById(num);
-                            if (cardOpt.isPresent()) {
-                                var cardEntity = cardOpt.get();
-                                cardEntity.setRest(cardEntity.getRest() + sum);
-                                cr.save(cardEntity);
-                            }
+                            cardDecreaseOp(cr, false, card);
                         } break;
                         case 1: {
-                            var cardOpt = cr1.findById(num);
-                            if (cardOpt.isPresent()) {
-                                var cardEntity = cardOpt.get();
-                                cardEntity.setRest(cardEntity.getRest() - sum);
-                                cr1.save(cardEntity);
-                            }
+                            cardDecreaseOp(cr1, false, card);
                         } break;
                     }
                 } else {
@@ -193,6 +154,33 @@ public class RepoMaster {
             var hist = new OpHistoryEntity(id, direction, num);
             opHistory.save(hist);
         }
+        return res;
+    }
+
+    private <T extends CrudRepository> String cardDecreaseOp (T repo, boolean isDecrease, CardDto card){
+        var res = "";
+        if (isDecrease) {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity)cardOpt.get();
+                if (cardEntity.getRest() >= card.getSum()) {
+                    cardEntity.setRest(cardEntity.getRest() - card.getSum());
+                    repo.save(cardEntity);
+                } else {
+                    res = notEnoughtMoney;
+                }
+            } else {
+                res = cardNotFound;
+            }
+        } else {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity)cardOpt.get();
+                cardEntity.setRest(cardEntity.getRest() + card.getSum());
+                repo.save(cardEntity);
+            }
+        }
+
         return res;
     }
 
