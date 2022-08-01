@@ -13,6 +13,7 @@ import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.common.TrnResultDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
+import ru.loki7187.microsrv.globalDto.ui.TransactionTrnDto;
 import ru.loki7187.microsrv.trnService.service.TrnService;
 
 import java.util.Date;
@@ -23,8 +24,8 @@ import static ru.loki7187.microsrv.globalconfig.Constants.*;
 @Service
 public class UIService {
 
-    private final String direct = "direct";
-    private final String revert = "revert";
+    private final String increase = "increase";
+    private final String decrease = "decrease";
     private final String cardReqType = "cardReqType";
     private final String trnReqType = "trnReqType";
 
@@ -48,7 +49,7 @@ public class UIService {
     public void increaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelChangeReq(card, direct);
+            cancelChangeReq(card, increase);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, card, cardReqType));
@@ -58,7 +59,7 @@ public class UIService {
     public void decreaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelChangeReq(card, revert);
+            cancelChangeReq(card, decrease);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, card, cardReqType));
@@ -72,11 +73,11 @@ public class UIService {
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, trn, trnReqType));
-        // TODO call trnService async
+        jmsTemplate.convertAndSend(trnOpFromUi, new TransactionTrnDto(id, trn));
     }
 
-    public void cancelChangeReq (CardDto card, String directParentOp) {
-        if (directParentOp.equals(direct)) {
+    public void cancelChangeReq (CardDto card, String parentOp) {
+        if (parentOp.equals(increase)) {
             //TODO call trnService async
         } else {
             //TODO call trnService async
@@ -90,7 +91,12 @@ public class UIService {
     @JmsListener(destination = uiResultAddress, containerFactory = myFactory)
     public void onRequestResult (TrnResultDto res) {
         logger.debug("setting result to deferredResult");
-        requests.get(res.getId()).getLeft().setResult(res.getResult());
+        var req = requests.get(res.getId());
+        if (!req.getLeft().hasResult()){
+            // тут можно получить исходный объект - CardTrnDto или TransactionTrnDto из req.getMiddle, с приведением типа в зависимости от req.getRight
+            req.getLeft().setResult(res.getResult());
+            requests.remove(res.getId());
+        }
     }
 
     //TODO проверить повторный приход ответа

@@ -58,12 +58,12 @@ public class TrnData {
     public Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> getNextStep() {
         Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> res;
         if (trnStage.equals(preparation) || trnStage.equals(inProcess)) {
-            res = steps.entrySet().stream().sorted()
+            res = steps.entrySet().stream().sorted((e1, e2) -> e1.getKey() <= e2.getKey() ? -1 : 1)
                     .filter(e -> e.getValue().getSecond().getStepStatus().equals(emptyStepStatus) && e.getValue().getSecond().getStepDirection().equals(directionDirect))
                     .findFirst();
         }
         else {
-            res = steps.entrySet().stream().sorted( (e1, e2) -> e1.getKey() <= e2.getKey() ? -1 : 1)
+            res = steps.entrySet().stream().sorted( (e1, e2) -> e1.getKey() <= e2.getKey() ? 1 : -1)
                     .filter(e -> e.getValue().getSecond().getStepDirection().equals(directionRevert) && e.getValue().getSecond().getStepStatus().equals(directOpDone))
                     .findFirst();
         }

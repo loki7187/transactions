@@ -65,5 +65,5 @@ public class Constants {
     // jms
     public static final String myFactory = "myFactory";
 
-    public static Long globalTimeout = 5000L;
+    public static Long globalTimeout = 500000L; //5000L
 }

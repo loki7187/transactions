@@ -16,7 +16,6 @@ public class UIController {
     @Autowired
     UIService uiService;
 
-//    private final Long timeout = 100000000L; //10 sec
 
     @PostMapping("/increase")
     public DeferredResult<String> increaseCard(@RequestBody CardDto card){

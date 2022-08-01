@@ -158,7 +158,7 @@ public class RepoMaster {
     }
 
     private <T extends CrudRepository> String cardDecreaseOp (T repo, boolean isDecrease, CardDto card){
-        var res = "";
+        var res = success;
         if (isDecrease) {
             var cardOpt = repo.findById(card.getNum());
             if (cardOpt.isPresent()) {

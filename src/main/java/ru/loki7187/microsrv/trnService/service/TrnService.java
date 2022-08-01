@@ -16,6 +16,7 @@ import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
 import ru.loki7187.microsrv.globalDto.trnservice.TrnData;
+import ru.loki7187.microsrv.globalDto.ui.TransactionTrnDto;
 import ru.loki7187.microsrv.trnService.step.ICommonStep;
 
 import java.util.ArrayList;
@@ -121,7 +122,7 @@ public class TrnService {
     @JmsListener(destination = increaseOpFromUi, containerFactory = myFactory)
     public void onIncreaseOpFromUi (CardTrnDto cardTrn) {
         logger.debug("onIncreaseOpFromUi");
-        if (checkAnotherOpForCardInProcess(cardTrn)){
+        if (checkAnotherOpForCardInProcess(cardTrn.getId())){
             increaseCardRest(cardTrn.getCard(), cardTrn.getId(), cardTrn.getResultAddress());
         } else {
             jmsTemplate.convertAndSend(cardTrn.getResultAddress(), new TrnResultDto(cardTrn.getId(), anotherOpInProcess));
@@ -131,10 +132,20 @@ public class TrnService {
     @JmsListener(destination = decreaseOpFromUi, containerFactory = myFactory)
     public void onDecreaseOpFromUi (CardTrnDto cardTrn) {
         logger.debug("onDecreaseOpFromUi");
-        if (checkAnotherOpForCardInProcess(cardTrn)){
+        if (checkAnotherOpForCardInProcess(cardTrn.getId())){
             decreaseCardRest(cardTrn.getCard(), cardTrn.getId(), cardTrn.getResultAddress());
         } else {
             jmsTemplate.convertAndSend(cardTrn.getResultAddress(), new TrnResultDto(cardTrn.getId(), anotherOpInProcess));
+        }
+    }
+
+    @JmsListener(destination = trnOpFromUi, containerFactory = myFactory)
+    public void onTrnOpFromUi (TransactionTrnDto transactionTrnDto) {
+        logger.debug("onTrnOpFromUi");
+        if (checkAnotherOpForCardInProcess(transactionTrnDto.getTrn().getNum1()) && checkAnotherOpForCardInProcess(transactionTrnDto.getTrn().getNum2())){
+            makeTransactionCardToCard(transactionTrnDto.getTrn(), transactionTrnDto.getId(), transactionTrnDto.getResultAddress());
+        } else {
+            jmsTemplate.convertAndSend(transactionTrnDto.getResultAddress(), new TrnResultDto(transactionTrnDto.getId(), anotherOpInProcess));
         }
     }
 
@@ -161,11 +172,11 @@ public class TrnService {
         jmsTemplate.convertAndSend(trnData.getResultAddress(), new TrnResultDto(trnData.getTrnId(), trnData.getTrnResult()));
     }
 
-    private Boolean checkAnotherOpForCardInProcess (CardTrnDto cardTrn) {
+    private Boolean checkAnotherOpForCardInProcess (Long id) {
         return queries.values().stream().
                 filter(e -> !e.getFirst().getTrnStage().equals(completed))
                 .flatMap(e -> e.getSecond().stream())
-                .filter(e -> e.equals(cardTrn))
+                .filter(e -> e.equals(id))
                 .count() == 0;
     }
 }
