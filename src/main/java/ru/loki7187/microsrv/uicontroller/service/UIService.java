@@ -98,6 +98,4 @@ public class UIService {
             requests.remove(res.getId());
         }
     }
-
-    //TODO проверить повторный приход ответа
 }

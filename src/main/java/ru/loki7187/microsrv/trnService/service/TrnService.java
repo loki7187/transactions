@@ -87,7 +87,7 @@ public class TrnService {
         runNextStep(trnData);
     }
 
-    //TODO доделать
+    //TODO доделать (учесть, что транзакция может быть в состоянии cancelled)
     @Transactional
     public void runNextStep (TrnData data) {
         data.getNextStep().ifPresent(
@@ -104,6 +104,7 @@ public class TrnService {
     //TODO не забыть посмотреть, где нужна @Transactional
     //TODO cancel operations
     // зато надо обработать ошибки и revert операции
+    //TODO проверить корректность/нужность использования параллельных коллекций
     @JmsListener(destination = trnResultAddress, containerFactory = myFactory)
     public void onStepResult(StepData data) {
         if (data.getStepResult().equals(success)){
