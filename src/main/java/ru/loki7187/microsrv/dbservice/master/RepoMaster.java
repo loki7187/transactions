@@ -37,6 +37,7 @@ public class RepoMaster {
     JmsTemplate jmsTemplate;
 
     private final Logger logger = LoggerFactory.getLogger(RepoMaster.class);
+    //TODO добавить сохранение результатов шагов в бд
 
     @Transactional
     public String increaseCardRest(StepData data, String direction) {

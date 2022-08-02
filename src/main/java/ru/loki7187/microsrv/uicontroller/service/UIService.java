@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.common.TrnResultDto;
+import ru.loki7187.microsrv.globalDto.ui.CancelTrnDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 import ru.loki7187.microsrv.globalDto.ui.TransactionTrnDto;
@@ -23,9 +24,6 @@ import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
 @Service
 public class UIService {
-
-    private final String increase = "increase";
-    private final String decrease = "decrease";
     private final String cardReqType = "cardReqType";
     private final String trnReqType = "trnReqType";
 
@@ -49,7 +47,7 @@ public class UIService {
     public void increaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelChangeReq(card, increase);
+            cancelReq(id);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, card, cardReqType));
@@ -59,7 +57,7 @@ public class UIService {
     public void decreaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelChangeReq(card, decrease);
+            cancelReq(id);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, card, cardReqType));
@@ -69,23 +67,15 @@ public class UIService {
     public void trnCardToCardReq (DeferredResult<String> res, TransactionDto trn) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelTrn(trn);
+            cancelReq(id);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, trn, trnReqType));
         jmsTemplate.convertAndSend(trnOpFromUi, new TransactionTrnDto(id, trn));
     }
 
-    public void cancelChangeReq (CardDto card, String parentOp) {
-        if (parentOp.equals(increase)) {
-            //TODO call trnService async
-        } else {
-            //TODO call trnService async
-        }
-    }
-
-    public void cancelTrn (TransactionDto trn){
-        //TODO call trnService async
+    public void cancelReq (Long id) {
+        jmsTemplate.convertAndSend(cancelOp, new CancelTrnDto(id, getId()));
     }
 
     @JmsListener(destination = uiResultAddress, containerFactory = myFactory)

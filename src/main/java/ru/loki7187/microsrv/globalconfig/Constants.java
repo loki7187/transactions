@@ -1,5 +1,7 @@
 package ru.loki7187.microsrv.globalconfig;
 
+import org.springframework.beans.factory.annotation.Value;
+
 public class Constants {
 
     //global result/return
@@ -24,6 +26,7 @@ public class Constants {
     public static final String stepLast = "stepLast";
     public static final String stepLastOpRevert = "stepLastOpRevert";
     public static final String stepLastOp = "stepLastOp";
+    public static final String cancelOp = "cancelOp";
     public static final String trnResultAddress = "trnResultAddress";
     public static final String cardParam = "cardParam";
     public static final String trnParam = "trnParam";
@@ -65,5 +68,6 @@ public class Constants {
     // jms
     public static final String myFactory = "myFactory";
 
-    public static Long globalTimeout = 500000L; //5000L
+    @Value("app.global.constants.globalTimeout")
+    public static Long globalTimeout; //5000L
 }

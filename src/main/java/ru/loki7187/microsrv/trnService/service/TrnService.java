@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.common.TrnResultDto;
+import ru.loki7187.microsrv.globalDto.ui.CancelTrnDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
@@ -107,16 +108,20 @@ public class TrnService {
     //TODO проверить корректность/нужность использования параллельных коллекций
     @JmsListener(destination = trnResultAddress, containerFactory = myFactory)
     public void onStepResult(StepData data) {
-        if (data.getStepResult().equals(success)){
-            runNextStep(queries.get(data.getTrnId()).getFirst());
+        var trnData = queries.get(data.getTrnId()).getFirst();
+        if (!trnData.getTrnStage().equals(canceled)) {
+            if (data.getStepResult().equals(success)) {
+                runNextStep(queries.get(data.getTrnId()).getFirst());
+            } else {
+                trnData.setTrnStage(trnErr);
+                trnData.setTrnResult(data.getStepResult());
+                trnData.getSteps().entrySet().stream()
+                        .filter(e -> e.getValue().getSecond().getStepStatus().equals(directOpDone))
+                        .forEach(e -> e.getValue().getSecond().setStepDirection(directionRevert));
+                runNextStep(trnData);
+            }
         } else {
-            var trnData = queries.get(data.getTrnId()).getFirst();
-            trnData.setTrnStage(trnErr);
-            trnData.setTrnResult(data.getStepResult());
-            trnData.getSteps().entrySet().stream()
-                    .filter(e -> e.getValue().getSecond().getStepStatus().equals(directOpDone))
-                            .forEach(e -> e.getValue().getSecond().setStepDirection(directionRevert));
-            runNextStep(trnData);
+            // отработает отменяющая операция
         }
     }
 
@@ -150,6 +155,11 @@ public class TrnService {
         }
     }
 
+    @JmsListener(destination = cancelOp, containerFactory = myFactory)
+    public void cancelOp (CancelTrnDto cancelTrnDto) {
+        cancelOperation(cancelTrnDto);
+    }
+
     @JmsListener(destination = stepFirstOp, containerFactory = myFactory)
     public void onStepFirst(StepData data) {
         logger.debug("first step");
@@ -173,11 +183,24 @@ public class TrnService {
         jmsTemplate.convertAndSend(trnData.getResultAddress(), new TrnResultDto(trnData.getTrnId(), trnData.getTrnResult()));
     }
 
+    @JmsListener(destination = stepLastOpRevert, containerFactory = myFactory)
+    public void stepLastOpRevert (StepData data) {}
+
     private Boolean checkAnotherOpForCardInProcess (Long id) {
         return queries.values().stream().
                 filter(e -> !e.getFirst().getTrnStage().equals(completed))
                 .flatMap(e -> e.getSecond().stream())
                 .filter(e -> e.equals(id))
                 .count() == 0;
+    }
+
+    private String cancelOperation (CancelTrnDto cancelTrnDto) {
+
+        var op = queries.get(cancelTrnDto.getDirectOpId());
+        // операция либо в процессе, либо выполнена, либо с еррором
+        // от этого зависит выборка откатываемых шагов
+        op.getFirst().setTrnStage(canceled);
+        //TODO выбрать все шаги со статусом не emptyStepStatus, выполнить новую операцию с шагами старой в обратном порядке +-
+        return "";
     }
 }
