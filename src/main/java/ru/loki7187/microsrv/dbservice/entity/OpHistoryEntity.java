@@ -1,20 +1,15 @@
 package ru.loki7187.microsrv.dbservice.entity;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 @Entity
-@Table(name = "Ophistory", schema = "mainschema", indexes = {
-        @Index(name = "trnIdAndDirection", columnList = "trnId, direction")
-})
-public class OpHistoryEntity {
+@Table(name = "Ophistory", schema = "mainschema")
+public class OpHistoryEntity implements Serializable {
 
     @Id
-    @Column(name = "trnId")
-    Long trnId;
-
-    @Id
-    @Column(name = "direction")
-    String direction;
+    @Column(name = "id")
+    OpHistoryEntityIdClass id = new OpHistoryEntityIdClass();;
 
     @Column(name = "card")
     Long num;
@@ -26,26 +21,26 @@ public class OpHistoryEntity {
     }
 
     public OpHistoryEntity(Long trnId, String direction, Long num, String opResult) {
-        this.trnId = trnId;
-        this.direction = direction;
+        this.id.setTrnId(trnId);
+        this.id.setDirection(direction);
         this.num = num;
         this.opResult = opResult;
     }
 
     public Long getTrnId() {
-        return trnId;
+        return this.id.getTrnId();
     }
 
     public void setTrnId(Long trnId) {
-        this.trnId = trnId;
+        this.id.setTrnId(trnId);
     }
 
     public String getDirection() {
-        return direction;
+        return this.id.getDirection();
     }
 
     public void setDirection(String direction) {
-        this.direction = direction;
+        this.id.setDirection(direction);
     }
 
     public Long getNum() {
@@ -64,3 +59,5 @@ public class OpHistoryEntity {
         this.opResult = opResult;
     }
 }
+
+

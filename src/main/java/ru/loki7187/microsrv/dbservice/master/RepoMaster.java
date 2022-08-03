@@ -16,6 +16,7 @@ import ru.loki7187.microsrv.dbservice.dao.OpHistoryRepo;
 import ru.loki7187.microsrv.dbservice.entity.CardEntity;
 import ru.loki7187.microsrv.dbservice.entity.CardEntity1;
 import ru.loki7187.microsrv.dbservice.entity.OpHistoryEntity;
+import ru.loki7187.microsrv.dbservice.entity.OpHistoryEntityIdClass;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
 
@@ -72,7 +73,7 @@ public class RepoMaster {
                 opHistory.save(new OpHistoryEntity(id, directionDirect, card.getNum(), err));
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == true) {
                 //прямая операция была, обратной ещё не было
-                var op = opHistory.findById(id).get();
+                var op = opHistory.findById(new OpHistoryEntityIdClass(id, directionDirect)).get();
                 if(op.getOpResult().equals(success)) {
                     switch ((int) (card.getNum() % 2)) {
                         case 0: {
@@ -148,7 +149,7 @@ public class RepoMaster {
                 opHistory.save(new OpHistoryEntity(id, directionDirect, card.getNum(), err));
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == true) {
                 //прямая операция была, обратной ещё не было
-                var op = opHistory.findById(id).get();
+                var op = opHistory.findById(new OpHistoryEntityIdClass(id, directionDirect)).get();
                 //результат в data может быть некорректным, т.к. могли прийти из cancel операции, которая не дождалась окончания выполнения какого - то шага
                 if (op.getOpResult().equals(success)) {
                     switch ((int) (num % 2)){
@@ -232,8 +233,8 @@ public class RepoMaster {
     }
 
     private Pair<Boolean, Boolean> checkOpHist(Long id) {
-        var existsDirectOp = opHistory.findOpHistoryEntityByTrnIdAndDirection(id, directionDirect).isPresent();
-        var existsRevertOp = opHistory.findOpHistoryEntityByTrnIdAndDirection(id, directionRevert).isPresent();
+        var existsDirectOp = opHistory.findById(new OpHistoryEntityIdClass(id, directionDirect)).isPresent();
+        var existsRevertOp = opHistory.findById(new OpHistoryEntityIdClass(id, directionRevert)).isPresent();
         return Pair.of(existsDirectOp, existsRevertOp);
     }
 }
