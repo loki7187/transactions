@@ -22,7 +22,10 @@ import ru.loki7187.microsrv.trnService.step.ICommonStep;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static ru.loki7187.microsrv.globalconfig.Constants.*;
 
@@ -50,9 +53,9 @@ public class TrnService {
         var stepData = new StepData(id);
         var cardList = new ArrayList<>(List.of(card.getNum()));
         stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
-        trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
-        trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
         queries.put(id, Pair.of(trnData, cardList));
         runNextStep(trnData);
     }
@@ -63,9 +66,9 @@ public class TrnService {
         var stepData = new StepData(id);
         var cardList = new ArrayList<>(List.of(card.getNum()));
         stepData.getStepParams().put(cardParam, new Gson().toJson(card, CardDto.class));
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
-        trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepDecrease)).findFirst().get(), stepData));
-        trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepDecrease)).findFirst().get(), stepData));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
         queries.put(id, Pair.of(trnData, cardList));
         runNextStep(trnData);
     }
@@ -80,18 +83,24 @@ public class TrnService {
         stepData1.getStepParams().put(cardParam, new Gson().toJson(new CardDto(trn.getNum1(),trn.getSum()), CardDto.class));
         stepData2.getStepParams().put(cardParam, new Gson().toJson(new CardDto(trn.getNum2(),trn.getSum()), CardDto.class));
 
-        trnData.getSteps().put(1, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
-        trnData.getSteps().put(2, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepDecrease)).findFirst().get(), stepData1));
-        trnData.getSteps().put(3, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData2));
-        trnData.getSteps().put(4, Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepFirst)).findFirst().get(), new StepData(id)));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepDecrease)).findFirst().get(), stepData1));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepIncrease)).findFirst().get(), stepData2));
+        trnData.putdata(Pair.of(allSteps.stream().filter(e -> e.getStepId().equals(stepLast)).findFirst().get(), new StepData(id)));
         queries.put(id, Pair.of(trnData, cardList));
         runNextStep(trnData);
     }
 
-    //TODO доделать (учесть, что транзакция может быть в состоянии cancelled)
+    //если
     @Transactional
     public void runNextStep (TrnData data) {
-        data.getNextStep().ifPresent(
+        Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> stepOp;
+        if (data.getTrnStage().equals(canceled)){
+            stepOp = data.getNextStepForCancelOp();
+        } else {
+            stepOp = data.getNextStep();
+        }
+        stepOp.ifPresent(
                 (step) -> {
                     if (step.getValue().getSecond().getStepDirection().equals(directionDirect)){step.getValue().getSecond().setStepStatus(directOpDone);}
                     else {step.getValue().getSecond().setStepStatus(revertOpDone);}
@@ -103,8 +112,6 @@ public class TrnService {
     }
 
     //TODO не забыть посмотреть, где нужна @Transactional
-    //TODO cancel operations
-    // зато надо обработать ошибки и revert операции
     //TODO проверить корректность/нужность использования параллельных коллекций
     @JmsListener(destination = trnResultAddress, containerFactory = myFactory)
     public void onStepResult(StepData data) {
@@ -186,21 +193,33 @@ public class TrnService {
     @JmsListener(destination = stepLastOpRevert, containerFactory = myFactory)
     public void stepLastOpRevert (StepData data) {}
 
-    private Boolean checkAnotherOpForCardInProcess (Long id) {
+    private Boolean checkAnotherOpForCardInProcess (Long cardId) {
         return queries.values().stream().
                 filter(e -> !e.getFirst().getTrnStage().equals(completed))
                 .flatMap(e -> e.getSecond().stream())
-                .filter(e -> e.equals(id))
+                .filter(e -> e.equals(cardId))
                 .count() == 0;
     }
 
-    private String cancelOperation (CancelTrnDto cancelTrnDto) {
+    private void cancelOperation (CancelTrnDto cancelTrnDto) {
 
         var op = queries.get(cancelTrnDto.getDirectOpId());
         // операция либо в процессе, либо выполнена, либо с еррором
         // от этого зависит выборка откатываемых шагов
         op.getFirst().setTrnStage(canceled);
-        //TODO выбрать все шаги со статусом не emptyStepStatus, выполнить новую операцию с шагами старой в обратном порядке +-
-        return "";
+        //выбрать все шаги со статусом не emptyStepStatus, выполнить новую операцию с шагами старой в обратном порядке +-
+        //шаги со статусом revertOpDone тоже выберем, запуск шага должен быть идемпотентным
+
+        var newOp = new TrnData(cancelTrnDto.getResultAddress(), cancelTrnDto.getRevertOpId());
+        op.getFirst().getSteps().entrySet().stream()
+                .filter(e -> !e.getValue().getSecond().getStepStatus().equals(emptyStepStatus))
+                .collect(Collectors.toList())
+                .stream()
+                .forEach( e-> newOp.putdata(e.getValue()));
+        newOp.getSteps().entrySet().stream().forEach((e) -> {
+            e.getValue().getSecond().setStepDirection(directionRevert);
+            e.getValue().getSecond().setStepStatus(directOpDone);
+        });
+        runNextStep(newOp);
     }
 }

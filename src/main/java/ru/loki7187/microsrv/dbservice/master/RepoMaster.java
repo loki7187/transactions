@@ -66,22 +66,29 @@ public class RepoMaster {
                 // если уже есть обратная операция, значит что - то пошло не так, запишем, что прямая тоже была, чтобы не ползать повторно (в конце)
                 // , при этом прямая и обратная ничего не сделают
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == false) {
-                // если не было прямой, а уже делаем обратную, то ничего не делаем, но делаем об этом запись, чтобы не ползать повторно (в конце)
+                // если не было прямой, а уже делаем обратную, то ничего не делаем, но делаем об этом запись (revertOp), чтобы не ползать повторно (в конце)
+                //так же, сделаем тут запись о прямой операции
+                // тогда при параллельной гонке мы упадём либо в этой транзакции, либо упадёт параллельная транзакция, выполняющая прямую операцию
+                opHistory.save(new OpHistoryEntity(id, directionDirect, card.getNum(), err));
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == true) {
                 //прямая операция была, обратной ещё не было
-                switch ((int) (card.getNum() % 2)) {
-                    case 0: {
-                        cardIncreaseOp(cr, false, card);
+                var op = opHistory.findById(id).get();
+                if(op.getOpResult().equals(success)) {
+                    switch ((int) (card.getNum() % 2)) {
+                        case 0: {
+                            cardIncreaseOp(cr, false, card);
+                        }
+                        break;
+                        case 1: {
+                            cardIncreaseOp(cr1, false, card);
+                        }
+                        break;
                     }
-                    break;
-                    case 1: {
-                        cardIncreaseOp(cr1, false, card);
-                    }
-                    break;
+                } else {
+                    //прямая операция прошла с ошибкой, ничего не делаем
                 }
             }
-            var hist = new OpHistoryEntity(id, direction, card.getNum());
-            opHistory.save(hist);
+            opHistory.save(new OpHistoryEntity(id, direction, card.getNum(), success));
         }
         return success;
     }
@@ -135,10 +142,15 @@ public class RepoMaster {
                 // если уже есть обратная операция, значит что - то пошло не так, запишем, что прямая тоже была, чтобы не ползать повторно (в конце)
                 // , при этом прямая и обратная ничего не сделают
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == false) {
-                // если не было прямой, а уже делаем обратную, то ничего не делаем, но делаем об этом запись, чтобы не ползать повторно (в конце)
+                // если не было прямой, а уже делаем обратную, то ничего не делаем, но делаем об этом запись (revertOp), чтобы не ползать повторно (в конце)
+                //так же, сделаем тут запись о прямой операции
+                // тогда при параллельной гонке мы упадём либо в этой транзакции, либо упадёт параллельная транзакция, выполняющая прямую операцию
+                opHistory.save(new OpHistoryEntity(id, directionDirect, card.getNum(), err));
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == true) {
                 //прямая операция была, обратной ещё не было
-                if (data.getStepResult().equals(success)) {
+                var op = opHistory.findById(id).get();
+                //результат в data может быть некорректным, т.к. могли прийти из cancel операции, которая не дождалась окончания выполнения какого - то шага
+                if (op.getOpResult().equals(success)) {
                     switch ((int) (num % 2)){
                         case 0: {
                             cardDecreaseOp(cr, false, card);
@@ -151,9 +163,7 @@ public class RepoMaster {
                     //прямая операция прошла с ошибкой, ничего не делаем
                 }
             }
-
-            var hist = new OpHistoryEntity(id, direction, num);
-            opHistory.save(hist);
+            opHistory.save(new OpHistoryEntity(id, direction, card.getNum(), success));
         }
         return res;
     }
@@ -188,6 +198,7 @@ public class RepoMaster {
     @JmsListener(destination = stepIncreaseOp, containerFactory = myFactory)
     public void onStepIncreaseRest (StepData data) {
         logger.debug("onStepIncreaseRest");
+        //TODO try-catch вокруг транзакции, эту операцию нельзя повторять, вывалить ошибку шага
         var res = increaseCardRest(data, directionDirect);
         data.setStepResult(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
@@ -196,6 +207,7 @@ public class RepoMaster {
     @JmsListener(destination = stepIncreaseOpRevert, containerFactory = myFactory)
     public void onStepIncreaseRestRevert (StepData data) {
         logger.debug("onStepIncreaseRestRevert");
+        //TODO try-catch вокруг транзакции, эту операцию можно повторять, пока не отработает без ошибок (вызывать повторный вызов из catch)
         var res = increaseCardRest(data, directionRevert);
         data.setStepResult(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
@@ -204,6 +216,7 @@ public class RepoMaster {
     @JmsListener(destination = stepDecreaseOp, containerFactory = myFactory)
     public void onStepDecreaseRest (StepData data) {
         logger.debug("onStepDecreaseRest");
+        //TODO try-catch вокруг транзакции, эту операцию нельзя повторять, вывалить ошибку шага
         var res = decreaseCardRest(data, directionDirect);
         data.setStepResult(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
@@ -212,6 +225,7 @@ public class RepoMaster {
     @JmsListener(destination = stepDecreaseOpRevert, containerFactory = myFactory)
     public void onStepDecreaseRestRevert (StepData data) {
         logger.debug("onStepDecreaseRestRevert");
+        //TODO try-catch вокруг транзакции, эту операцию можно повторять, пока не отработает без ошибок (вызывать повторный вызов из catch)
         var res = decreaseCardRest(data, directionRevert);
         data.setStepResult(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);

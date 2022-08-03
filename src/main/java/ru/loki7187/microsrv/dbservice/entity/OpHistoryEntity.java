@@ -9,26 +9,27 @@ import javax.persistence.*;
 public class OpHistoryEntity {
 
     @Id
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    Long id;
-
     @Column(name = "trnId")
     Long trnId;
 
+    @Id
     @Column(name = "direction")
     String direction;
 
     @Column(name = "card")
     Long num;
 
+    @Column(name = "result")
+    String opResult;
+
     public OpHistoryEntity() {
     }
 
-    public OpHistoryEntity(Long trnId, String direction, Long num) {
+    public OpHistoryEntity(Long trnId, String direction, Long num, String opResult) {
         this.trnId = trnId;
         this.direction = direction;
         this.num = num;
+        this.opResult = opResult;
     }
 
     public Long getTrnId() {
@@ -53,5 +54,13 @@ public class OpHistoryEntity {
 
     public void setNum(Long num) {
         this.num = num;
+    }
+
+    public String getOpResult() {
+        return opResult;
+    }
+
+    public void setOpResult(String opResult) {
+        this.opResult = opResult;
     }
 }

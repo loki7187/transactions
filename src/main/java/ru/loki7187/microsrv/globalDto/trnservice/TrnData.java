@@ -27,6 +27,8 @@ public class TrnData {
 
     private String resultAddress = "";
 
+    private Integer stepNum = 1;
+
     public String getResultAddress() {
         return resultAddress;
     }
@@ -58,16 +60,32 @@ public class TrnData {
     public Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> getNextStep() {
         Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> res;
         if (trnStage.equals(preparation) || trnStage.equals(inProcess)) {
-            res = steps.entrySet().stream().sorted((e1, e2) -> e1.getKey() <= e2.getKey() ? -1 : 1)
+            res = steps.entrySet().stream().sorted(this::getIncreaseComparator)
                     .filter(e -> e.getValue().getSecond().getStepStatus().equals(emptyStepStatus) && e.getValue().getSecond().getStepDirection().equals(directionDirect))
                     .findFirst();
         }
         else {
-            res = steps.entrySet().stream().sorted( (e1, e2) -> e1.getKey() <= e2.getKey() ? 1 : -1)
+            res = steps.entrySet().stream().sorted(this::getDecreaseComparator)
                     .filter(e -> e.getValue().getSecond().getStepDirection().equals(directionRevert) && e.getValue().getSecond().getStepStatus().equals(directOpDone))
                     .findFirst();
         }
         return res;
+    }
+
+    public Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> getNextStepForCancelOp() {
+        Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> res;
+        res = steps.entrySet().stream().sorted(this::getIncreaseComparator)
+                .filter(e -> e.getValue().getSecond().getStepDirection().equals(directionRevert) && e.getValue().getSecond().getStepStatus().equals(directOpDone))
+                .findFirst();
+        return res;
+    }
+
+    public int getIncreaseComparator(Map.Entry<Integer, Pair<ICommonStep, StepData>> e1, Map.Entry<Integer, Pair<ICommonStep, StepData>> e2) {
+        return e1.getKey() <= e2.getKey() ? -1 : 1;
+    }
+
+    public int getDecreaseComparator(Map.Entry<Integer, Pair<ICommonStep, StepData>> e1, Map.Entry<Integer, Pair<ICommonStep, StepData>> e2) {
+        return e1.getKey() <= e2.getKey() ? 1 : -1;
     }
 
     public String getTrnStage() {
@@ -85,4 +103,9 @@ public class TrnData {
     public void setTrnResult(String trnResult) {
         this.trnResult = trnResult;
     }
+
+    public void putdata (Pair<ICommonStep, StepData> data) {
+        this.getSteps().put(stepNum++, data);
+    }
+
 }
