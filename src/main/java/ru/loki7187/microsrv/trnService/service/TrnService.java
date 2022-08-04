@@ -202,7 +202,9 @@ public class TrnService {
     }
 
     private void cancelOperation (CancelTrnDto cancelTrnDto) {
-
+        if (!queries.containsKey(cancelTrnDto.getDirectOpId())){
+            return;
+        }
         var op = queries.get(cancelTrnDto.getDirectOpId());
         // операция либо в процессе, либо выполнена, либо с еррором
         // от этого зависит выборка откатываемых шагов

@@ -80,7 +80,8 @@ public class UIService {
 
     @JmsListener(destination = uiResultAddress, containerFactory = myFactory)
     public void onRequestResult (TrnResultDto res) {
-        logger.debug("setting result to deferredResult");
+        logger.debug("setting result to deferredResult id = " + res.getId());
+        logger.info("setting result to deferredResult id = " + res.getId());
         var req = requests.get(res.getId());
         if (!req.getLeft().hasResult()){
             // тут можно получить исходный объект - CardTrnDto или TransactionTrnDto из req.getMiddle, с приведением типа в зависимости от req.getRight

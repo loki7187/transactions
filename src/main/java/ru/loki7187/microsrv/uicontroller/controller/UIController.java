@@ -38,6 +38,13 @@ public class UIController {
         return res;
     }
 
+    @PostMapping("/cancelOp")
+    public DeferredResult<String> cancelOp(@RequestParam Long opId){
+        DeferredResult<String> res = new DeferredResult<>(50000000L);
+        uiService.cancelReq(opId);
+        return res;
+    }
+
     @GetMapping("/tmp")
     public DeferredResult<String> tmpMethod() {
         DeferredResult<String> output = new DeferredResult<>(globalTimeout);

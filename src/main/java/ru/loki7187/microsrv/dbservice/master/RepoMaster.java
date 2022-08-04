@@ -199,17 +199,28 @@ public class RepoMaster {
     @JmsListener(destination = stepIncreaseOp, containerFactory = myFactory)
     public void onStepIncreaseRest (StepData data) {
         logger.debug("onStepIncreaseRest");
-        //TODO try-catch вокруг транзакции, эту операцию нельзя повторять, вывалить ошибку шага
-        var res = increaseCardRest(data, directionDirect);
-        data.setStepResult(res);
+        try {
+            var res = increaseCardRest(data, directionDirect);
+            data.setStepResult(res);
+        } catch(Exception e) {
+            data.setStepResult(err);
+        }
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
 
     @JmsListener(destination = stepIncreaseOpRevert, containerFactory = myFactory)
     public void onStepIncreaseRestRevert (StepData data) {
         logger.debug("onStepIncreaseRestRevert");
-        //TODO try-catch вокруг транзакции, эту операцию можно повторять, пока не отработает без ошибок (вызывать повторный вызов из catch)
-        var res = increaseCardRest(data, directionRevert);
+        String res = "";
+        try {
+            res = increaseCardRest(data, directionRevert);
+        }catch (Exception e) {
+            if (data.canRepeat()){
+                jmsTemplate.convertAndSend(stepIncreaseOpRevert, data);
+            }else {
+                res = err;
+            }
+        }
         data.setStepResult(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
@@ -217,17 +228,28 @@ public class RepoMaster {
     @JmsListener(destination = stepDecreaseOp, containerFactory = myFactory)
     public void onStepDecreaseRest (StepData data) {
         logger.debug("onStepDecreaseRest");
-        //TODO try-catch вокруг транзакции, эту операцию нельзя повторять, вывалить ошибку шага
-        var res = decreaseCardRest(data, directionDirect);
-        data.setStepResult(res);
+        try {
+            var res = decreaseCardRest(data, directionDirect);
+            data.setStepResult(res);
+        } catch(Exception e) {
+            data.setStepResult(err);
+        }
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
 
     @JmsListener(destination = stepDecreaseOpRevert, containerFactory = myFactory)
     public void onStepDecreaseRestRevert (StepData data) {
         logger.debug("onStepDecreaseRestRevert");
-        //TODO try-catch вокруг транзакции, эту операцию можно повторять, пока не отработает без ошибок (вызывать повторный вызов из catch)
-        var res = decreaseCardRest(data, directionRevert);
+        String res = "";
+        try {
+            res = decreaseCardRest(data, directionRevert);
+        }catch (Exception e) {
+            if (data.canRepeat()){
+                jmsTemplate.convertAndSend(stepDecreaseOpRevert, data);
+            }else {
+                res = err;
+            }
+        }
         data.setStepResult(res);
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }

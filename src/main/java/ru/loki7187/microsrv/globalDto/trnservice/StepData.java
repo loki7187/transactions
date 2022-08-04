@@ -17,6 +17,8 @@ public class StepData implements IResultable {
 
     private String stepDirection = directionDirect;
 
+    private Integer repeatLimit = 5;
+
     public StepData() {
     }
 
@@ -63,5 +65,9 @@ public class StepData implements IResultable {
 
     public void setStepResult(String stepResult) {
         this.stepResult = stepResult;
+    }
+
+    public Boolean canRepeat() {
+        return repeatLimit-- > 0;
     }
 }
