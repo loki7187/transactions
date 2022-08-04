@@ -41,7 +41,7 @@ public class UIController {
     @PostMapping("/cancelOp")
     public DeferredResult<String> cancelOp(@RequestParam Long opId){
         DeferredResult<String> res = new DeferredResult<>(50000000L);
-        uiService.cancelReq(opId);
+        uiService.cancelReq(opId, res);
         return res;
     }
 

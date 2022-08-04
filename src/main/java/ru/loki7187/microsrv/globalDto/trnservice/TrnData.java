@@ -1,12 +1,8 @@
 package ru.loki7187.microsrv.globalDto.trnservice;
 
-import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Pair;
-import org.springframework.stereotype.Component;
-import ru.loki7187.microsrv.globalDto.trnservice.StepData;
 import ru.loki7187.microsrv.trnService.step.ICommonStep;
 
-import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +23,7 @@ public class TrnData {
 
     private String resultAddress = "";
 
-    private Integer stepNum = 1;
+    private Integer currStepNum = 1;
 
     public String getResultAddress() {
         return resultAddress;
@@ -74,7 +70,7 @@ public class TrnData {
 
     public Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> getNextStepForCancelOp() {
         Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> res;
-        res = steps.entrySet().stream().sorted(this::getIncreaseComparator)
+        res = steps.entrySet().stream().sorted(this::getDecreaseComparator)
                 .filter(e -> e.getValue().getSecond().getStepDirection().equals(directionRevert) && e.getValue().getSecond().getStepStatus().equals(directOpDone))
                 .findFirst();
         return res;
@@ -105,7 +101,14 @@ public class TrnData {
     }
 
     public void putdata (Pair<ICommonStep, StepData> data) {
-        this.getSteps().put(stepNum++, data);
+        data.getSecond().setStepNum(currStepNum);
+        this.getSteps().put(currStepNum++, data);
+    }
+
+    public Pair<ICommonStep, StepData> getStepByNum(Integer stepNum) {
+        return this.getSteps().entrySet().stream()
+                .filter(e -> e.getValue().getSecond().getStepNum().equals(stepNum))
+                .findFirst().get().getValue();
     }
 
 }

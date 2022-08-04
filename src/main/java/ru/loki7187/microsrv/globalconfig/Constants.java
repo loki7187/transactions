@@ -37,6 +37,7 @@ public class Constants {
     public static final String completed = "completed";
     public static final String canceled = "canceled";
     public static final String trnErr = "trnErr";
+    public static final String cancelOP = "cancelOP";
 
     //trn results
     public static final String trnEmptyResult = "trnEmptyResult";

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.data.util.Pair;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
@@ -38,7 +37,7 @@ public class TrnService {
     @Autowired
     JmsTemplate jmsTemplate;
 
-    //TODO переделать на хранение в бд
+    //TODO переделать на хранение в бд (если успею)
     private final ConcurrentHashMap<Long, Pair<TrnData, ArrayList<Long>>> queries;
 
     private final Logger logger = LoggerFactory.getLogger(TrnService.class);
@@ -60,7 +59,6 @@ public class TrnService {
         runNextStep(trnData);
     }
 
-    //TODO доделать
     public void decreaseCardRest(CardDto card, Long id, String resultAddress) {
         var trnData = new TrnData(resultAddress, id);
         var stepData = new StepData(id);
@@ -73,7 +71,6 @@ public class TrnService {
         runNextStep(trnData);
     }
 
-    //TODO доделать
     public void makeTransactionCardToCard (TransactionDto trn , Long id, String resultAddress) {
         var trnData = new TrnData(resultAddress, id);
         var stepData1 = new StepData(id);
@@ -95,7 +92,7 @@ public class TrnService {
     @Transactional
     public void runNextStep (TrnData data) {
         Optional<Map.Entry<Integer, Pair<ICommonStep, StepData>>> stepOp;
-        if (data.getTrnStage().equals(canceled)){
+        if (data.getTrnStage().equals(cancelOp)){
             stepOp = data.getNextStepForCancelOp();
         } else {
             stepOp = data.getNextStep();
@@ -115,8 +112,9 @@ public class TrnService {
     //TODO проверить корректность/нужность использования параллельных коллекций
     @JmsListener(destination = trnResultAddress, containerFactory = myFactory)
     public void onStepResult(StepData data) {
-        var trnData = queries.get(data.getTrnId()).getFirst();
-        if (!trnData.getTrnStage().equals(canceled)) {
+        var trnData = data.getCancelOpId().equals(0L) ? queries.get(data.getTrnId()).getFirst() : queries.get(data.getCancelOpId()).getFirst();
+        trnData.getStepByNum(data.getStepNum()).getSecond().setStepResult(data.getStepResult());
+        if (!(trnData.getTrnStage().equals(canceled) || trnData.getTrnStage().equals(cancelOp))) {
             if (data.getStepResult().equals(success)) {
                 runNextStep(queries.get(data.getTrnId()).getFirst());
             } else {
@@ -129,6 +127,7 @@ public class TrnService {
             }
         } else {
             // отработает отменяющая операция
+            runNextStep(trnData);
         }
     }
 
@@ -164,6 +163,7 @@ public class TrnService {
 
     @JmsListener(destination = cancelOp, containerFactory = myFactory)
     public void cancelOp (CancelTrnDto cancelTrnDto) {
+        // TODO проверить, не выставлен ли уже статус cancelled для прямой операции
         cancelOperation(cancelTrnDto);
     }
 
@@ -180,22 +180,36 @@ public class TrnService {
     @JmsListener(destination = stepLastOp, containerFactory = myFactory)
     public void onStepLast(StepData data) {
         logger.debug("last step");
-        var trnData = queries.get(data.getTrnId()).getFirst();
+        var trnData = data.getCancelOpId().equals(0L) ? queries.get(data.getTrnId()).getFirst() : queries.get(data.getCancelOpId()).getFirst();
+        var thisStepData = trnData.getStepByNum(data.getStepNum()).getSecond();
         if (trnData.getTrnStage().equals(inProcess) && trnData.getTrnResult().equals(trnEmptyResult)){
-            data.setStepResult(success);
+            thisStepData.setStepResult(success);
             trnData.setTrnStage(completed);
             trnData.setTrnResult(success);
+        }else if ((trnData.getTrnStage().equals(cancelOp))) {
+            thisStepData.setStepResult(success);
+            String res = trnData.getSteps().entrySet().stream()
+                    .map(e -> e.getValue().getSecond())
+                    .filter(e -> !e.getStepResult().equals(success))
+                    .count() > 0 ? err : success;
+            trnData.setTrnResult(res);
+
+        }else {
+            // это обратный для первого шага
         }
-        queries.remove(data.getTrnId());
+        //queries.remove(data.getTrnId());
         jmsTemplate.convertAndSend(trnData.getResultAddress(), new TrnResultDto(trnData.getTrnId(), trnData.getTrnResult()));
     }
 
     @JmsListener(destination = stepLastOpRevert, containerFactory = myFactory)
-    public void stepLastOpRevert (StepData data) {}
+    public void stepLastOpRevert (StepData data) {
+        data.setStepResult(success);
+        jmsTemplate.convertAndSend(data.getResultAddress(), data);
+    }
 
     private Boolean checkAnotherOpForCardInProcess (Long cardId) {
         return queries.values().stream().
-                filter(e -> !e.getFirst().getTrnStage().equals(completed))
+                filter(e -> !(e.getFirst().getTrnStage().equals(completed) || e.getFirst().getTrnStage().equals(canceled) || e.getFirst().getTrnStage().equals(cancelOp)))
                 .flatMap(e -> e.getSecond().stream())
                 .filter(e -> e.equals(cardId))
                 .count() == 0;
@@ -213,15 +227,20 @@ public class TrnService {
         //шаги со статусом revertOpDone тоже выберем, запуск шага должен быть идемпотентным
 
         var newOp = new TrnData(cancelTrnDto.getResultAddress(), cancelTrnDto.getRevertOpId());
+        newOp.setTrnStage(cancelOp);
         op.getFirst().getSteps().entrySet().stream()
                 .filter(e -> !e.getValue().getSecond().getStepStatus().equals(emptyStepStatus))
                 .collect(Collectors.toList())
                 .stream()
-                .forEach( e-> newOp.putdata(e.getValue()));
+                .forEach( e-> newOp.putdata(Pair.of(e.getValue().getFirst(), new StepData(cancelTrnDto.getDirectOpId(), e.getValue().getSecond()))));
         newOp.getSteps().entrySet().stream().forEach((e) -> {
             e.getValue().getSecond().setStepDirection(directionRevert);
             e.getValue().getSecond().setStepStatus(directOpDone);
+            e.getValue().getSecond().setCancelOpId(cancelTrnDto.getRevertOpId());
         });
+        var newCardList = new ArrayList<Long>();
+        newCardList.addAll( op.getSecond());
+        queries.put(cancelTrnDto.getRevertOpId(), Pair.of(newOp, newCardList));
         runNextStep(newOp);
     }
 }

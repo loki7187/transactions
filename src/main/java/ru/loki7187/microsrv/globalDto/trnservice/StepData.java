@@ -19,11 +19,21 @@ public class StepData implements IResultable {
 
     private Integer repeatLimit = 5;
 
+    private Long cancelOpId = 0L;
+
+    private Integer stepNum = 0;
+
     public StepData() {
     }
 
     public StepData(Long id) {
         this.trnId = id;
+    }
+
+    public StepData(Long id, StepData other) {
+
+        this.trnId = id;
+        this.stepParams.putAll(other.getStepParams());
     }
 
     public HashMap<String, String> getStepParams() {
@@ -69,5 +79,21 @@ public class StepData implements IResultable {
 
     public Boolean canRepeat() {
         return repeatLimit-- > 0;
+    }
+
+    public Long getCancelOpId() {
+        return cancelOpId;
+    }
+
+    public void setCancelOpId(Long cancelOpId) {
+        this.cancelOpId = cancelOpId;
+    }
+
+    public Integer getStepNum() {
+        return stepNum;
+    }
+
+    public void setStepNum(Integer stepNum) {
+        this.stepNum = stepNum;
     }
 }

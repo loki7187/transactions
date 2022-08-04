@@ -27,6 +27,8 @@ public class UIService {
     private final String cardReqType = "cardReqType";
     private final String trnReqType = "trnReqType";
 
+    private final String noneReqType = "noneReqType";
+
     @Autowired
     JmsTemplate jmsTemplate;
 //    @Autowired
@@ -47,7 +49,7 @@ public class UIService {
     public void increaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelReq(id);
+            cancelReq(id, res);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, card, cardReqType));
@@ -57,7 +59,7 @@ public class UIService {
     public void decreaseReq (DeferredResult<String> res, CardDto card) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelReq(id);
+            cancelReq(id, res);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, card, cardReqType));
@@ -67,15 +69,17 @@ public class UIService {
     public void trnCardToCardReq (DeferredResult<String> res, TransactionDto trn) {
         var id = getId();
         res.onTimeout(() -> {
-            cancelReq(id);
+            cancelReq(id, res);
             res.setErrorResult(err);
         });
         requests.put(id, Triple.of(res, trn, trnReqType));
         jmsTemplate.convertAndSend(trnOpFromUi, new TransactionTrnDto(id, trn));
     }
 
-    public void cancelReq (Long id) {
-        jmsTemplate.convertAndSend(cancelOp, new CancelTrnDto(id, getId()));
+    public void cancelReq (Long id, DeferredResult res) {
+        var cancelOpId = getId();
+        requests.put(cancelOpId, Triple.of(res, null, noneReqType));
+        jmsTemplate.convertAndSend(cancelOp, new CancelTrnDto(id, cancelOpId));
     }
 
     @JmsListener(destination = uiResultAddress, containerFactory = myFactory)
@@ -86,7 +90,7 @@ public class UIService {
         if (!req.getLeft().hasResult()){
             // тут можно получить исходный объект - CardTrnDto или TransactionTrnDto из req.getMiddle, с приведением типа в зависимости от req.getRight
             req.getLeft().setResult(res.getResult());
-            requests.remove(res.getId());
+            //requests.remove(res.getId());
         }
     }
 }
