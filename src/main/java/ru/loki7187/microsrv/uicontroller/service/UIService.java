@@ -4,7 +4,6 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.util.Pair;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,6 @@ import ru.loki7187.microsrv.globalDto.ui.CancelTrnDto;
 import ru.loki7187.microsrv.globalDto.ui.CardTrnDto;
 import ru.loki7187.microsrv.globalDto.common.TransactionDto;
 import ru.loki7187.microsrv.globalDto.ui.TransactionTrnDto;
-import ru.loki7187.microsrv.trnService.service.TrnService;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,7 +77,7 @@ public class UIService {
     public void cancelReq (Long id, DeferredResult res) {
         var cancelOpId = getId();
         requests.put(cancelOpId, Triple.of(res, null, noneReqType));
-        jmsTemplate.convertAndSend(cancelOp, new CancelTrnDto(id, cancelOpId));
+        jmsTemplate.convertAndSend(cancelOpInProcess, new CancelTrnDto(id, cancelOpId));
     }
 
     @JmsListener(destination = uiResultAddress, containerFactory = myFactory)

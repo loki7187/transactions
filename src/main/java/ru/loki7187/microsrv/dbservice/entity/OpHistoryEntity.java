@@ -4,12 +4,25 @@ import javax.persistence.*;
 import java.io.Serializable;
 
 @Entity
-@Table(name = "Ophistory", schema = "mainschema")
+@Table(name = "Ophistory", schema = "mainschema"
+,indexes = {
+        @Index(name = "trnIdx", columnList = "trnId, direction, repoOp", unique = true)
+})
 public class OpHistoryEntity implements Serializable {
 
     @Id
     @Column(name = "id")
-    OpHistoryEntityIdClass id = new OpHistoryEntityIdClass();;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    Long id;
+
+    @Column(name = "trnId")
+    Long trnId;
+
+    @Column(name = "direction")
+    String direction;
+
+    @Column(name = "repoOp")
+    String repoOp;
 
     @Column(name = "card")
     Long num;
@@ -20,27 +33,28 @@ public class OpHistoryEntity implements Serializable {
     public OpHistoryEntity() {
     }
 
-    public OpHistoryEntity(Long trnId, String direction, Long num, String opResult) {
-        this.id.setTrnId(trnId);
-        this.id.setDirection(direction);
+    public OpHistoryEntity(Long trnId, String direction, String repoOp, Long num, String opResult) {
+        this.trnId = trnId;
+        this.direction = direction;
+        this.repoOp = repoOp;
         this.num = num;
         this.opResult = opResult;
     }
 
     public Long getTrnId() {
-        return this.id.getTrnId();
+        return this.trnId;
     }
 
     public void setTrnId(Long trnId) {
-        this.id.setTrnId(trnId);
+        this.trnId = trnId;
     }
 
     public String getDirection() {
-        return this.id.getDirection();
+        return this.direction;
     }
 
     public void setDirection(String direction) {
-        this.id.setDirection(direction);
+        this.direction = direction;
     }
 
     public Long getNum() {

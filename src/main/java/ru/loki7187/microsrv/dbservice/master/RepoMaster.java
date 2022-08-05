@@ -14,9 +14,7 @@ import ru.loki7187.microsrv.dbservice.dao.CardRepo;
 import ru.loki7187.microsrv.dbservice.dao.CardRepo1;
 import ru.loki7187.microsrv.dbservice.dao.OpHistoryRepo;
 import ru.loki7187.microsrv.dbservice.entity.CardEntity;
-import ru.loki7187.microsrv.dbservice.entity.CardEntity1;
 import ru.loki7187.microsrv.dbservice.entity.OpHistoryEntity;
-import ru.loki7187.microsrv.dbservice.entity.OpHistoryEntityIdClass;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
 
@@ -44,7 +42,7 @@ public class RepoMaster {
     public String increaseCardRest(StepData data, String direction) {
         var card = new Gson().fromJson(data.getStepParams().get(cardParam), CardDto.class);
         var id = data.getTrnId();
-        var existsOp = checkOpHist(id);
+        var existsOp = checkOpHist(id, repoOpIncrease);
 
         // повторно операции не делаем
         if (!((direction.equals(directionDirect) && existsOp.getFirst() == true)
@@ -70,10 +68,10 @@ public class RepoMaster {
                 // если не было прямой, а уже делаем обратную, то ничего не делаем, но делаем об этом запись (revertOp), чтобы не ползать повторно (в конце)
                 //так же, сделаем тут запись о прямой операции
                 // тогда при параллельной гонке мы упадём либо в этой транзакции, либо упадёт параллельная транзакция, выполняющая прямую операцию
-                opHistory.save(new OpHistoryEntity(id, directionDirect, card.getNum(), err));
+                opHistory.save(new OpHistoryEntity(id, directionDirect, repoOpIncrease, card.getNum(), err));
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == true) {
                 //прямая операция была, обратной ещё не было
-                var op = opHistory.findById(new OpHistoryEntityIdClass(id, directionDirect)).get();
+                var op = opHistory.findOpHistoryEntityByTrnIdAndDirectionAndRepoOp(id, directionDirect, repoOpIncrease).get();
                 if(op.getOpResult().equals(success)) {
                     switch ((int) (card.getNum() % 2)) {
                         case 0: {
@@ -89,7 +87,7 @@ public class RepoMaster {
                     //прямая операция прошла с ошибкой, ничего не делаем
                 }
             }
-            opHistory.save(new OpHistoryEntity(id, direction, card.getNum(), success));
+            opHistory.save(new OpHistoryEntity(id, direction, repoOpIncrease, card.getNum(), success));
         }
         return success;
     }
@@ -122,7 +120,7 @@ public class RepoMaster {
         var num = card.getNum();
         var sum = card.getSum();
         var id = data.getTrnId();
-        var existsOp = checkOpHist(id);
+        var existsOp = checkOpHist(id, repoOpDecrease);
         var res = success;
 
         // повторно операции не делаем
@@ -146,10 +144,10 @@ public class RepoMaster {
                 // если не было прямой, а уже делаем обратную, то ничего не делаем, но делаем об этом запись (revertOp), чтобы не ползать повторно (в конце)
                 //так же, сделаем тут запись о прямой операции
                 // тогда при параллельной гонке мы упадём либо в этой транзакции, либо упадёт параллельная транзакция, выполняющая прямую операцию
-                opHistory.save(new OpHistoryEntity(id, directionDirect, card.getNum(), err));
+                opHistory.save(new OpHistoryEntity(id, directionDirect, repoOpDecrease, card.getNum(), err));
             } else if (direction.equals(directionRevert) && existsOp.getFirst() == true) {
                 //прямая операция была, обратной ещё не было
-                var op = opHistory.findById(new OpHistoryEntityIdClass(id, directionDirect)).get();
+                var op = opHistory.findOpHistoryEntityByTrnIdAndDirectionAndRepoOp(id, directionDirect, repoOpDecrease).get();
                 //результат в data может быть некорректным, т.к. могли прийти из cancel операции, которая не дождалась окончания выполнения какого - то шага
                 if (op.getOpResult().equals(success)) {
                     switch ((int) (num % 2)){
@@ -164,7 +162,7 @@ public class RepoMaster {
                     //прямая операция прошла с ошибкой, ничего не делаем
                 }
             }
-            opHistory.save(new OpHistoryEntity(id, direction, card.getNum(), success));
+            opHistory.save(new OpHistoryEntity(id, direction, repoOpDecrease, card.getNum(), res));
         }
         return res;
     }
@@ -254,9 +252,9 @@ public class RepoMaster {
         jmsTemplate.convertAndSend(data.getResultAddress(), data);
     }
 
-    private Pair<Boolean, Boolean> checkOpHist(Long id) {
-        var existsDirectOp = opHistory.findById(new OpHistoryEntityIdClass(id, directionDirect)).isPresent();
-        var existsRevertOp = opHistory.findById(new OpHistoryEntityIdClass(id, directionRevert)).isPresent();
+    private Pair<Boolean, Boolean> checkOpHist(Long id, String repoOp) {
+        var existsDirectOp = opHistory.findOpHistoryEntityByTrnIdAndDirectionAndRepoOp(id, directionDirect, repoOp).isPresent();
+        var existsRevertOp = opHistory.findOpHistoryEntityByTrnIdAndDirectionAndRepoOp(id, directionRevert, repoOp).isPresent();
         return Pair.of(existsDirectOp, existsRevertOp);
     }
 }

@@ -26,7 +26,8 @@ public class Constants {
     public static final String stepLast = "stepLast";
     public static final String stepLastOpRevert = "stepLastOpRevert";
     public static final String stepLastOp = "stepLastOp";
-    public static final String cancelOp = "cancelOp";
+    public static final String cancelOpInProcess = "cancelOpInProcess";
+    public static final String cancelOpInDone = "cancelOpInDone";
     public static final String trnResultAddress = "trnResultAddress";
     public static final String cardParam = "cardParam";
     public static final String trnParam = "trnParam";
@@ -66,9 +67,13 @@ public class Constants {
 
     public static final String uiResultAddress = "uiResultAddress";
 
+    //repo operations
+    public static final String repoOpIncrease = "repoOpIncrease";
+    public static final String repoOpDecrease = "repoOpDecrease";
     // jms
     public static final String myFactory = "myFactory";
 
-    @Value("app.global.constants.globalTimeout")
-    public static Long globalTimeout; //5000L
+//    @Value("app.global.constants.globalTimeout")
+//    public static Long globalTimeout; //5000L
+    public static Long globalTimeout = 50000000000L;
 }
