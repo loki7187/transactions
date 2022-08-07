@@ -14,6 +14,7 @@ import ru.loki7187.microsrv.dbservice.dao.CardRepo;
 import ru.loki7187.microsrv.dbservice.dao.CardRepo1;
 import ru.loki7187.microsrv.dbservice.dao.OpHistoryRepo;
 import ru.loki7187.microsrv.dbservice.entity.CardEntity;
+import ru.loki7187.microsrv.dbservice.entity.CardEntity1;
 import ru.loki7187.microsrv.dbservice.entity.OpHistoryEntity;
 import ru.loki7187.microsrv.globalDto.common.CardDto;
 import ru.loki7187.microsrv.globalDto.trnservice.StepData;
@@ -56,7 +57,7 @@ public class RepoMaster {
                     }
                     break;
                     case 1: {
-                        cardIncreaseOp(cr1, true, card);
+                        cardIncreaseOp1(cr1, true, card);
                     }
                     break;
                 }
@@ -79,7 +80,7 @@ public class RepoMaster {
                         }
                         break;
                         case 1: {
-                            cardIncreaseOp(cr1, false, card);
+                            cardIncreaseOp1(cr1, false, card);
                         }
                         break;
                     }
@@ -92,7 +93,7 @@ public class RepoMaster {
         return success;
     }
 
-    private <T extends CrudRepository> void cardIncreaseOp (T repo, boolean isIncrease, CardDto card) {
+    private void cardIncreaseOp (CardRepo repo, boolean isIncrease, CardDto card) {
 
         if (isIncrease) {
             var cardOpt = repo.findById(card.getNum());
@@ -108,6 +109,28 @@ public class RepoMaster {
             var cardOpt = repo.findById(card.getNum());
             if (cardOpt.isPresent()) {
                 var cardEntity = (CardEntity)cardOpt.get();
+                cardEntity.setRest(cardEntity.getRest() - card.getSum());
+                repo.save(cardEntity);
+            }
+        }
+    }
+
+    private void cardIncreaseOp1 (CardRepo1 repo, boolean isIncrease, CardDto card) {
+
+        if (isIncrease) {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity1) cardOpt.get();
+                cardEntity.setRest(cardEntity.getRest() + card.getSum());
+                repo.save(cardEntity);
+            } else {
+                var cardEntity = new CardEntity1(card.getNum(), card.getSum());
+                repo.save(cardEntity);
+            }
+        } else {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity1)cardOpt.get();
                 cardEntity.setRest(cardEntity.getRest() - card.getSum());
                 repo.save(cardEntity);
             }
@@ -134,7 +157,7 @@ public class RepoMaster {
                         res = cardDecreaseOp(cr, true, card);
                     } break;
                     case 1: {
-                        res = cardDecreaseOp(cr1, true, card);
+                        res = cardDecreaseOp1(cr1, true, card);
                     } break;
                 }
             } else if (direction.equals(directionDirect) && existsOp.getSecond() == true) {
@@ -155,7 +178,7 @@ public class RepoMaster {
                             cardDecreaseOp(cr, false, card);
                         } break;
                         case 1: {
-                            cardDecreaseOp(cr1, false, card);
+                            cardDecreaseOp1(cr1, false, card);
                         } break;
                     }
                 } else {
@@ -167,7 +190,7 @@ public class RepoMaster {
         return res;
     }
 
-    private <T extends CrudRepository> String cardDecreaseOp (T repo, boolean isDecrease, CardDto card){
+    private String cardDecreaseOp (CardRepo repo, boolean isDecrease, CardDto card){
         var res = success;
         if (isDecrease) {
             var cardOpt = repo.findById(card.getNum());
@@ -186,6 +209,33 @@ public class RepoMaster {
             var cardOpt = repo.findById(card.getNum());
             if (cardOpt.isPresent()) {
                 var cardEntity = (CardEntity)cardOpt.get();
+                cardEntity.setRest(cardEntity.getRest() + card.getSum());
+                repo.save(cardEntity);
+            }
+        }
+
+        return res;
+    }
+
+    private String cardDecreaseOp1 (CardRepo1 repo, boolean isDecrease, CardDto card){
+        var res = success;
+        if (isDecrease) {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity1)cardOpt.get();
+                if (cardEntity.getRest() >= card.getSum()) {
+                    cardEntity.setRest(cardEntity.getRest() - card.getSum());
+                    repo.save(cardEntity);
+                } else {
+                    res = notEnoughtMoney;
+                }
+            } else {
+                res = cardNotFound;
+            }
+        } else {
+            var cardOpt = repo.findById(card.getNum());
+            if (cardOpt.isPresent()) {
+                var cardEntity = (CardEntity1)cardOpt.get();
                 cardEntity.setRest(cardEntity.getRest() + card.getSum());
                 repo.save(cardEntity);
             }
