@@ -21,13 +21,13 @@ public class OpHistoryEntity implements Serializable {
     @Column(name = "direction")
     String direction;
 
-    @Column(name = "repoOp")
+    @Column(name = "repoop")
     String repoOp;
 
     @Column(name = "card")
     Long num;
 
-    @Column(name = "result")
+    @Column(name = "resultt")
     String opResult;
 
     public OpHistoryEntity() {

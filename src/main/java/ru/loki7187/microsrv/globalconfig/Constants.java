@@ -74,6 +74,6 @@ public class Constants {
     public static final String myFactory = "myFactory";
 
 //    @Value("app.global.constants.globalTimeout")
-//    public static Long globalTimeout; //5000L
-    public static Long globalTimeout = 50000000000L;
+    public static Long globalTimeout; //5000L
+
 }
